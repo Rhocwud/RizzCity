@@ -1,12 +1,19 @@
+# .github/workflows/generate-projectfilelinks.yml
 name: Generate ProjectFileLinks
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch: {}
+  schedule:
+    # Every 30 minutes
+    - cron: '*/30 * * * *'
 
 permissions:
   contents: write
   pull-requests: write
+
+concurrency:
+  group: generate-projectfilelinks
+  cancel-in-progress: false
 
 jobs:
   generate-links:
@@ -19,7 +26,7 @@ jobs:
       OUT: docs/ProjectFileLinks.txt
 
     steps:
-      - name: Checkout repo (with token to allow PR creation)
+      - name: Checkout repo (with PAT to allow PR creation)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -34,6 +41,7 @@ jobs:
           echo "# Auto-generated ProjectFileLinks.txt" > "$OUT"
           echo "# Generated: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$OUT"
           echo "" >> "$OUT"
+          # Find all .luau files under the designated ROOT folder and write raw URLs
           find "$ROOT" -type f -name "*.luau" | sort | while read -r f; do
             fname=$(basename "$f")
             rel="${f#${ROOT}/}"
@@ -47,6 +55,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$OUT"
+          # If there are no staged changes, exit cleanly
           if git diff --staged --quiet; then
             echo "No changes to commit."
             exit 0
