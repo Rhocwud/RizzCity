@@ -1,13 +1,13 @@
 # .github/workflows/generate-projectfilelinks.yml
 # Auto-generate docs/ProjectFileLinks.txt listing all .luau files under Explorer/
-# Runs on every push to main (adjust branches if you use a different default)
+# This workflow creates a Pull Request when the file changes (safe with branch protection).
+
 name: Generate ProjectFileLinks
 
 on:
   push:
     branches: [ "main" ]
 
-# Grant the workflow permission to update repository contents (allows commit/push)
 permissions:
   contents: write
 
@@ -15,7 +15,6 @@ jobs:
   generate-links:
     runs-on: ubuntu-latest
     env:
-      # Derive repo owner and name from the context
       USER: ${{ github.repository_owner }}
       REPO: ${{ github.event.repository.name }}
       BRANCH: main
@@ -23,13 +22,13 @@ jobs:
       OUT: docs/ProjectFileLinks.txt
 
     steps:
-      - name: Checkout repo (with token to allow push)
+      - name: Checkout repo (with token to allow PR creation)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Create docs folder if missing
+      - name: Ensure docs folder exists
         run: mkdir -p docs
 
       - name: Generate ProjectFileLinks.txt
@@ -37,24 +36,35 @@ jobs:
           echo "# Auto-generated ProjectFileLinks.txt" > "$OUT"
           echo "# Generated: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$OUT"
           echo "" >> "$OUT"
-          # Find all .luau files under the ROOT folder and create raw.githubusercontent.com URLs
           find "$ROOT" -type f -name "*.luau" | sort | while read -r f; do
             fname=$(basename "$f")
-            rel="${f#${ROOT}/}"           # path relative to Explorer/
-            # Build raw URL
+            rel="${f#${ROOT}/}"
             url="https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/$ROOT/$rel"
             printf "%s | %s | %s | %s\n" "$fname" "$rel" "$url" "$(date +%F)" >> "$OUT"
           done
           echo "Wrote $OUT with $(wc -l < $OUT) lines."
 
-      - name: Commit & push ProjectFileLinks.txt (if changed)
+      - name: Commit changes (if any)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$OUT"
           if git diff --staged --quiet; then
-            echo "No changes to $OUT; nothing to commit."
-          else
-            git commit -m "chore: regenerate ProjectFileLinks.txt"
-            git push origin "$BRANCH"
+            echo "No changes to commit."
+            exit 0
           fi
+          git commit -m "chore: regenerate ProjectFileLinks.txt"
+
+      - name: Create Pull Request if changed
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: chore: regenerate ProjectFileLinks.txt
+          title: chore: regenerate ProjectFileLinks.txt
+          body: |
+            Auto-generated update of ProjectFileLinks.txt (contains raw.githubusercontent.com links).
+            Please review and merge to update the canonical file.
+          base: main
+          branch: projectfilelinks/update-${{ github.run_id }}
+          labels: auto-generated
+          draft: false
