@@ -2,10 +2,7 @@
 name: Publish .luau Gist (private snapshot)
 
 on:
-  workflow_dispatch: {}     # manual run
-  # optional schedule if you later want automatic snapshots:
-  # schedule:
-  #   - cron: '*/30 * * * *'  # every 30 minutes
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -23,15 +20,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure Python available
-        run: python3 --version
+      - name: Ensure Python 3 available
+        run: |
+          python3 --version
+
+      - name: Install Python dependencies (requests)
+        run: |
+          python3 -m pip install --user requests
 
       - name: Gather .luau files and create Gist (secret)
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          set -e
-          python3 - <<'PY'
+          set -euo pipefail
+
+          # Write a small Python script that collects .luau files and posts a private gist
+          cat > /tmp/create_gist.py <<'PY'
 import os, json, sys, requests
 
 token = os.environ.get("GH_PAT")
@@ -43,7 +47,10 @@ root = os.environ.get("ROOT", "Explorer")
 files_payload = {}
 count = 0
 
-# walk repository and collect .luau files under ROOT
+if not os.path.isdir(root):
+    print(f"ERROR: root folder '{root}' not found in repo root.")
+    sys.exit(3)
+
 for dirpath, _, filenames in os.walk(root):
     for fname in filenames:
         if not fname.lower().endswith(".luau"):
@@ -55,7 +62,7 @@ for dirpath, _, filenames in os.walk(root):
         except Exception as e:
             print(f"Warning: could not read {filepath}: {e}")
             continue
-        # Gist filenames cannot include directory slashes; encode path into the filename
+        # Encode the path into the gist filename so it's unique and path-preserving
         gist_name = filepath.replace(os.sep, "__")
         files_payload[gist_name] = {"content": content}
         count += 1
@@ -86,19 +93,19 @@ except Exception:
 
 if resp.status_code not in (200,201):
     print("Failed to create gist:", resp.status_code)
-    print(resp_json)
+    print(json.dumps(resp_json, indent=2))
     sys.exit(1)
 
 html_url = resp_json.get("html_url")
-raw_base = resp_json.get("files", {})
+files_map = resp_json.get("files", {})
 print(f"Created gist: {html_url}")
-print("Gist contains %d files" % len(raw_base))
-# Print raw URLs for each file (the gist API returns 'raw_url' per file entry)
-for k,v in raw_base.items():
+print(f"Gist contains {len(files_map)} files")
+for k,v in files_map.items():
     raw_url = v.get("raw_url")
     print(f"FILE: {k} RAW: {raw_url}")
-
-# also print a single line with the gist id for convenience
 gist_id = resp_json.get("id")
 print(f"GIST_ID={gist_id}")
 PY
+
+          # run the script
+          python3 /tmp/create_gist.py
