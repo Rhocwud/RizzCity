@@ -1,7 +1,3 @@
-# .github/workflows/generate-projectfilelinks.yml
-# Auto-generate docs/ProjectFileLinks.txt listing all .luau files under Explorer/
-# This workflow creates a Pull Request when the file changes (safe with branch protection).
-
 name: Generate ProjectFileLinks
 
 on:
@@ -28,6 +24,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: true
+          token: ${{ secrets.GH_PAT }}
 
       - name: Ensure docs folder exists
         run: mkdir -p docs
@@ -59,7 +56,7 @@ jobs:
       - name: Create Pull Request if changed
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           commit-message: "chore: regenerate ProjectFileLinks.txt"
           title: "chore: regenerate ProjectFileLinks.txt"
           body: |
