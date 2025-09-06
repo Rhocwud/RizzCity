@@ -1,62 +1,43 @@
---Google Drive share links for Roblox Studio Rizz City .luau files
-
-Workspace/
-
-ReplicatedFirst/
-	ClientBus.luau							https://drive.google.com/uc?export=download&id=18LufZQAValghmhOInjwZ3NPkxvEKxJy4
-
-ReplicatedStorage/
-	Shared/
-		Asseets/
-			AssetsIndex.luau				https://drive.google.com/uc?export=download&id=1MPbq3UN12mFsYiwO5g5pgdmGiivySK4r
-		Config/
-			AnimationMap.luau				https://drive.google.com/uc?export=download&id=1-jNiKWS9LuZ9pKGnCoFNLwh5lmlORNlm
-			AnimationRegistry.luau			https://drive.google.com/uc?export=download&id=1c5ME4Vw4gYoxfWDQitx6Irkx1nuv4oSf
-			FeatureFlags.luau				https://drive.google.com/uc?export=download&id=1Pn1_-oRz3VA_E63udT2e8s3w6HKoqg4Q
-			Tuning.luau						https://drive.google.com/uc?export=download&id=1idPVMQzdI2EWJvSjCSDwTpThE2KrI-RD
-		Lib/
-			Bezier.luau						https://drive.google.com/uc?export=download&id=1OzEVYp1GpCCPXYc7FbvwYsHkxMMWVOxB
-			Prmoise.luau					https://drive.google.com/uc?export=download&id=11ADbHK0nRr43j-nmycxeXeQfNcgcJk2o
-				promise.init.spec.luau		https://drive.google.com/uc?export=download&id=1iIxYFgDUIOlhIHwfIXt0T9tZKWlFpSPt
-			Raycast.luau					https://drive.google.com/uc?export=download&id=1b3StWmYGFcS_wYHB0ozAghQwI9t3J-1v
-			Signal.luau						https://drive.google.com/uc?export=download&id=1Fq0H1v8kocfOMxcUf8GIuz5IZrWcmpIg
-			Trove.luau						https://drive.google.com/uc?export=download&id=1qqQPyjCSfUeZf98aN90VBvnGkxqW6__J
-				trove.init.spec.luau		https://drive.google.com/uc?export=download&id=1AV_s9BaRI23giBgRekOkx3XnnPWwWmkz
-			table-util.luau					https://drive.google.com/uc?export=download&id=1Rmy8zE1Hk98cF9LdKx5-HWCQhTXbXAN4
-				table.init.spec.luau		https://drive.google.com/uc?export=download&id=1qKSKc3TIE0upNzurHKTaQdiyyR8SWSQb
-			timer.luau						https://drive.google.com/uc?export=download&id=1w0WJlsl7ACDnhemZSlVON39x3uvue9Yb
-				timer.init.spec.luau		https://drive.google.com/uc?export=download&id=1d89Kk5rhGfd4hKXZYeD57WFiNqMZiUgf
-		Packages/
-					CameraShaker.luau		https://drive.google.com/uc?export=download&id=12XvlaYMsOcpBw0HZmWFgHnEG6-N_iiHf
-	Adjacency.luau							https://drive.google.com/uc?export=download&id=1oHpGWm3xodOipn9pOAK6nSGdvlVMxwye
-	Constants.luau							https://drive.google.com/uc?export=download&id=11T4yijdGi-z96Ma3dMv_BV4yeZv9_kYf
-
-ServerScriptService/
-	Services/
-		AbilityService.luau					https://drive.google.com/uc?export=download&id=1BQtRCMcezQLLy3gSJyRJ94obM4-mfLwb
-			Abiltiies.luau					https://drive.google.com/uc?export=download&id=1l_wo86YDXO4ajhEe34CwAH7GdnfJTrr9
-		CombatService.luau					https://drive.google.com/uc?export=download&id=1DgidhnBF8kLCeHpgvqHwMtxbVMk_GDox
-		DataService.luau					https://drive.google.com/uc?export=download&id=1yYScLa1qFJs1Gq8ZQ1QX80M9cLv-EXZo
-		GameServivce.luau					https://drive.google.com/uc?export=download&id=16n-6YkDkEJ3XgilqmHCSwNMxyEldiTmv
-			TeamService.luau				https://drive.google.com/uc?export=download&id=1SYzKtYPpAJ2ATQksfvyyCUAYQCHiwb79
-			WarService.luau					https://drive.google.com/uc?export=download&id=1pVHAr9G6pWm6QaqyAiZC9yZqvqQZOX8E
-		PlayerService.luau					https://drive.google.com/uc?export=download&id=1IG00cLh5AU2XCh72ZsYdxkxWkwdx4cmp
-		ZoneService.luau					https://drive.google.com/uc?export=download&id=1AzLRL5PQZbzoboM6uyRzyla8CECfHEEi
-			ClaimTouchSerivce.luau			https://drive.google.com/uc?export=download&id=1ao6pp94C8DrNmF5W0rmjY3uY_44O8lvx
-	SkyboxRotation.luau						https://drive.google.com/uc?export=download&id=1c0L20lL8xz86iPjAHlIN7a22NG1S2I-h
-		
-StarterPlayer/
-	StarterCharacterScripts/
-	StarterPlayerScripts/
-		Client/
-			Alerts.luau						https://drive.google.com/uc?export=download&id=1xnOWtkecNIm-36jpm6wE1pnnwp0KKWiC
-			WarBanner.luau					https://drive.google.com/uc?export=download&id=1un7ZRY0YzRAT5tIJStPKtVgvYO7Wyuir
-			WarMap.luau						https://drive.google.com/uc?export=download&id=1qxvMmWp26S0mCvSFpk7eTPlX9mkG9r9M
-			ZoneHud.luau					https://drive.google.com/uc?export=download&id=1igdInxZxm50V8Kn7cwCF1006u5R0eMJu
-		ClientInit.luau						https://drive.google.com/uc?export=download&id=1vE0LhQYlH2D_dTuNQ3l7CbA9KQWVkE4O
-		DisableChat.luau					https://drive.google.com/uc?export=download&id=1PaVV69M4Z36n3vW-9w9yAVKmjZkjDNRq
-		CameraController.luau				https://drive.google.com/uc?export=download&id=1vcUq3Vu3h0vIibMDUuv3c_qM_8OR0mT2
-		MovementController.luau				https://drive.google.com/uc?export=download&id=1PaVV69M4Z36n3vW-9w9yAVKmjZkjDNRq
-		TargetLockController.luau			https://drive.google.com/uc?export=download&id=17QkoxGevfFoNBSU78-GzThMheEy-xShU
-		WallRun.luau						https://drive.google.com/uc?export=download&id=1PUNBmxe2Er5aPY8uJ7FSLBX5xsfXHAAX
-		
+﻿# Auto-generated ProjectFileLinks.txt
+# Generated: 2025-09-06T17:56:50.4805928-04:00
+ClientBus.luau | ReplicatedFirst/ClientBus.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedFirst/ClientBus.luau | 2025-09-06
+Adjacency.luau | ReplicatedStorage/Adjacency.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Adjacency.luau | 2025-09-06
+Constants.luau | ReplicatedStorage/Constants.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Constants.luau | 2025-09-06
+AssetsIndex.luau | ReplicatedStorage/Shared/Assets/AssetsIndex.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Assets/AssetsIndex.luau | 2025-09-06
+AnimationMap.luau | ReplicatedStorage/Shared/Config/AnimationMap.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Config/AnimationMap.luau | 2025-09-06
+AnimationRegistry.luau | ReplicatedStorage/Shared/Config/AnimationRegistry.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Config/AnimationRegistry.luau | 2025-09-06
+FeatureFlags.luau | ReplicatedStorage/Shared/Config/FeatureFlags.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Config/FeatureFlags.luau | 2025-09-06
+Tuning.luau | ReplicatedStorage/Shared/Config/Tuning.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Config/Tuning.luau | 2025-09-06
+Bezier.luau | ReplicatedStorage/Shared/Lib/Bezier.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/Bezier.luau | 2025-09-06
+promise.init.spec.luau | ReplicatedStorage/Shared/Lib/promise.init.spec.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/promise.init.spec.luau | 2025-09-06
+Promise.luau | ReplicatedStorage/Shared/Lib/Promise.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/Promise.luau | 2025-09-06
+Raycast.luau | ReplicatedStorage/Shared/Lib/Raycast.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/Raycast.luau | 2025-09-06
+Signal.luau | ReplicatedStorage/Shared/Lib/Signal.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/Signal.luau | 2025-09-06
+table.init.spec.luau | ReplicatedStorage/Shared/Lib/table.init.spec.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/table.init.spec.luau | 2025-09-06
+table-util.luau | ReplicatedStorage/Shared/Lib/table-util.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/table-util.luau | 2025-09-06
+timer.init.spec.luau | ReplicatedStorage/Shared/Lib/timer.init.spec.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/timer.init.spec.luau | 2025-09-06
+timer.luau | ReplicatedStorage/Shared/Lib/timer.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/timer.luau | 2025-09-06
+trove.init.spec.luau | ReplicatedStorage/Shared/Lib/trove.init.spec.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/trove.init.spec.luau | 2025-09-06
+Trove.luau | ReplicatedStorage/Shared/Lib/Trove.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Lib/Trove.luau | 2025-09-06
+CameraShaker.luau | ReplicatedStorage/Shared/Packages/CameraShaker.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ReplicatedStorage/Shared/Packages/CameraShaker.luau | 2025-09-06
+Abilities.luau | ServerScriptService/Services/Abilities.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/Abilities.luau | 2025-09-06
+AbilityService.luau | ServerScriptService/Services/AbilityService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/AbilityService.luau | 2025-09-06
+ClaimTouchService.luau | ServerScriptService/Services/ClaimTouchService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/ClaimTouchService.luau | 2025-09-06
+CombatService.luau | ServerScriptService/Services/CombatService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/CombatService.luau | 2025-09-06
+DataService.luau | ServerScriptService/Services/DataService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/DataService.luau | 2025-09-06
+GameService.luau | ServerScriptService/Services/GameService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/GameService.luau | 2025-09-06
+PlayerService.luau | ServerScriptService/Services/PlayerService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/PlayerService.luau | 2025-09-06
+TeamService.luau | ServerScriptService/Services/TeamService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/TeamService.luau | 2025-09-06
+WarService.luau | ServerScriptService/Services/WarService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/WarService.luau | 2025-09-06
+ZoneService.luau | ServerScriptService/Services/ZoneService.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/Services/ZoneService.luau | 2025-09-06
+SkyboxRotation.luau | ServerScriptService/SkyboxRotation.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/ServerScriptService/SkyboxRotation.luau | 2025-09-06
+CameraController.luau | StarterPlayer/StarterPlayerScripts/CameraController.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/CameraController.luau | 2025-09-06
+Alerts.luau | StarterPlayer/StarterPlayerScripts/Client/Alerts.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/Client/Alerts.luau | 2025-09-06
+WarBanner.luau | StarterPlayer/StarterPlayerScripts/Client/WarBanner.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/Client/WarBanner.luau | 2025-09-06
+WarMap.luau | StarterPlayer/StarterPlayerScripts/Client/WarMap.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/Client/WarMap.luau | 2025-09-06
+ZoneHud.luau | StarterPlayer/StarterPlayerScripts/Client/ZoneHud.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/Client/ZoneHud.luau | 2025-09-06
+ClientInit.luau | StarterPlayer/StarterPlayerScripts/ClientInit.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/ClientInit.luau | 2025-09-06
+DisableChat.luau | StarterPlayer/StarterPlayerScripts/DisableChat.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/DisableChat.luau | 2025-09-06
+MovementController.luau | StarterPlayer/StarterPlayerScripts/MovementController.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/MovementController.luau | 2025-09-06
+TargetLockController.luau | StarterPlayer/StarterPlayerScripts/TargetLockController.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/TargetLockController.luau | 2025-09-06
+WallRun.luau | StarterPlayer/StarterPlayerScripts/WallRun.luau | https://raw.githubusercontent.com/Rhocwud/RizzCity/main/Explorer/StarterPlayer/StarterPlayerScripts/WallRun.luau | 2025-09-06
