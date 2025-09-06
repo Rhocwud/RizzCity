@@ -59,12 +59,12 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: chore: regenerate ProjectFileLinks.txt
-          title: chore: regenerate ProjectFileLinks.txt
+          commit-message: "chore: regenerate ProjectFileLinks.txt"
+          title: "chore: regenerate ProjectFileLinks.txt"
           body: |
             Auto-generated update of ProjectFileLinks.txt (contains raw.githubusercontent.com links).
             Please review and merge to update the canonical file.
-          base: main
-          branch: projectfilelinks/update-${{ github.run_id }}
-          labels: auto-generated
+          base: "main"
+          branch: "projectfilelinks/update-${{ github.run_id }}"
+          labels: "auto-generated"
           draft: false
