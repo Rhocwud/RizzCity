@@ -1,0 +1,45 @@
+Rizz City – System Setup Summary
+Last Updated: 2025-09-06
+
+Purpose
+This file explains how project context is managed across chats so ChatGPT always has access to current scripts, history, and archive.
+
+Components
+Google Drive (Live Source of Truth)
+Scripts are synced to disk via Roblox Studio’s Sync to Disk feature.
+Google Drive mirrors the Explorer folder, preserving hierarchy and .luau files.
+All .luau files on Google Drive are shared and the links are stored in the Project folder under ProjectFileLinks.txt
+
+Drive Link (root):
+ProjectFileLinks.txt
+This contains the current active versions of all scripts in their proper Explorer structure along with direct Google Drive links to them.
+ChatGPT should treat this as the canonical source of truth for active code.
+
+Project Folder (Chat Logs & Indexes)
+All chat histories are saved here as .txt files with date + topic naming.
+These preserve the reasoning, debugging, and planning behind each system.  
+Do not treat the code within as canonical source of truth.  Rather, this is an archive to see how the code has gotten to this point.
+
+Also contains:
+Project Changelog.txt → versioning milestones.
+Index.txt → archive index with reuse likelihood ratings.
+Screenshots of Explorer hierarchy (nightly) for reference.
+ServerStorage/Archive (Legacy Code)
+Contains old/unused scripts, indexed in Index.txt.
+Scripts rated 1–3 for likelihood of reuse.
+If anything is restored, update both header version and Project Changelog.txt.
+
+Workflow Summary
+Google Drive = Live scripts (what the game is actually running).  ProjectFileLinks.txt help navigate to the shared viewable .luau files
+Project folder = Memory (chat logs, changelog, archive index).
+
+When starting a new chat, ChatGPT should:
+Load the SystemSetup.txt file (this file).
+Reference Google Drive for the current script state by using ProjectFileLinks.txt to view the current active code.
+
+Use Project folder logs for reasoning/history.
+
+Notes
+
+ChatGPT does not auto-see changes in Google Drive unless prompted. If a script has been updated, explicitly tell ChatGPT to check it.
+Non-script assets (RemoteEvents, Workspace items) are not visible unless exported or described manually.

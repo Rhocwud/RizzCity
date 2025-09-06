@@ -1,0 +1,62 @@
+--Google Drive share links for Roblox Studio Rizz City .luau files
+
+Workspace/
+
+ReplicatedFirst/
+	ClientBus.luau							https://drive.google.com/uc?export=download&id=18LufZQAValghmhOInjwZ3NPkxvEKxJy4
+
+ReplicatedStorage/
+	Shared/
+		Asseets/
+			AssetsIndex.luau				https://drive.google.com/uc?export=download&id=1MPbq3UN12mFsYiwO5g5pgdmGiivySK4r
+		Config/
+			AnimationMap.luau				https://drive.google.com/uc?export=download&id=1-jNiKWS9LuZ9pKGnCoFNLwh5lmlORNlm
+			AnimationRegistry.luau			https://drive.google.com/uc?export=download&id=1c5ME4Vw4gYoxfWDQitx6Irkx1nuv4oSf
+			FeatureFlags.luau				https://drive.google.com/uc?export=download&id=1Pn1_-oRz3VA_E63udT2e8s3w6HKoqg4Q
+			Tuning.luau						https://drive.google.com/uc?export=download&id=1idPVMQzdI2EWJvSjCSDwTpThE2KrI-RD
+		Lib/
+			Bezier.luau						https://drive.google.com/uc?export=download&id=1OzEVYp1GpCCPXYc7FbvwYsHkxMMWVOxB
+			Prmoise.luau					https://drive.google.com/uc?export=download&id=11ADbHK0nRr43j-nmycxeXeQfNcgcJk2o
+				promise.init.spec.luau		https://drive.google.com/uc?export=download&id=1iIxYFgDUIOlhIHwfIXt0T9tZKWlFpSPt
+			Raycast.luau					https://drive.google.com/uc?export=download&id=1b3StWmYGFcS_wYHB0ozAghQwI9t3J-1v
+			Signal.luau						https://drive.google.com/uc?export=download&id=1Fq0H1v8kocfOMxcUf8GIuz5IZrWcmpIg
+			Trove.luau						https://drive.google.com/uc?export=download&id=1qqQPyjCSfUeZf98aN90VBvnGkxqW6__J
+				trove.init.spec.luau		https://drive.google.com/uc?export=download&id=1AV_s9BaRI23giBgRekOkx3XnnPWwWmkz
+			table-util.luau					https://drive.google.com/uc?export=download&id=1Rmy8zE1Hk98cF9LdKx5-HWCQhTXbXAN4
+				table.init.spec.luau		https://drive.google.com/uc?export=download&id=1qKSKc3TIE0upNzurHKTaQdiyyR8SWSQb
+			timer.luau						https://drive.google.com/uc?export=download&id=1w0WJlsl7ACDnhemZSlVON39x3uvue9Yb
+				timer.init.spec.luau		https://drive.google.com/uc?export=download&id=1d89Kk5rhGfd4hKXZYeD57WFiNqMZiUgf
+		Packages/
+					CameraShaker.luau		https://drive.google.com/uc?export=download&id=12XvlaYMsOcpBw0HZmWFgHnEG6-N_iiHf
+	Adjacency.luau							https://drive.google.com/uc?export=download&id=1oHpGWm3xodOipn9pOAK6nSGdvlVMxwye
+	Constants.luau							https://drive.google.com/uc?export=download&id=11T4yijdGi-z96Ma3dMv_BV4yeZv9_kYf
+
+ServerScriptService/
+	Services/
+		AbilityService.luau					https://drive.google.com/uc?export=download&id=1BQtRCMcezQLLy3gSJyRJ94obM4-mfLwb
+			Abiltiies.luau					https://drive.google.com/uc?export=download&id=1l_wo86YDXO4ajhEe34CwAH7GdnfJTrr9
+		CombatService.luau					https://drive.google.com/uc?export=download&id=1DgidhnBF8kLCeHpgvqHwMtxbVMk_GDox
+		DataService.luau					https://drive.google.com/uc?export=download&id=1yYScLa1qFJs1Gq8ZQ1QX80M9cLv-EXZo
+		GameServivce.luau					https://drive.google.com/uc?export=download&id=16n-6YkDkEJ3XgilqmHCSwNMxyEldiTmv
+			TeamService.luau				https://drive.google.com/uc?export=download&id=1SYzKtYPpAJ2ATQksfvyyCUAYQCHiwb79
+			WarService.luau					https://drive.google.com/uc?export=download&id=1pVHAr9G6pWm6QaqyAiZC9yZqvqQZOX8E
+		PlayerService.luau					https://drive.google.com/uc?export=download&id=1IG00cLh5AU2XCh72ZsYdxkxWkwdx4cmp
+		ZoneService.luau					https://drive.google.com/uc?export=download&id=1AzLRL5PQZbzoboM6uyRzyla8CECfHEEi
+			ClaimTouchSerivce.luau			https://drive.google.com/uc?export=download&id=1ao6pp94C8DrNmF5W0rmjY3uY_44O8lvx
+	SkyboxRotation.luau						https://drive.google.com/uc?export=download&id=1c0L20lL8xz86iPjAHlIN7a22NG1S2I-h
+		
+StarterPlayer/
+	StarterCharacterScripts/
+	StarterPlayerScripts/
+		Client/
+			Alerts.luau						https://drive.google.com/uc?export=download&id=1xnOWtkecNIm-36jpm6wE1pnnwp0KKWiC
+			WarBanner.luau					https://drive.google.com/uc?export=download&id=1un7ZRY0YzRAT5tIJStPKtVgvYO7Wyuir
+			WarMap.luau						https://drive.google.com/uc?export=download&id=1qxvMmWp26S0mCvSFpk7eTPlX9mkG9r9M
+			ZoneHud.luau					https://drive.google.com/uc?export=download&id=1igdInxZxm50V8Kn7cwCF1006u5R0eMJu
+		ClientInit.luau						https://drive.google.com/uc?export=download&id=1vE0LhQYlH2D_dTuNQ3l7CbA9KQWVkE4O
+		DisableChat.luau					https://drive.google.com/uc?export=download&id=1PaVV69M4Z36n3vW-9w9yAVKmjZkjDNRq
+		CameraController.luau				https://drive.google.com/uc?export=download&id=1vcUq3Vu3h0vIibMDUuv3c_qM_8OR0mT2
+		MovementController.luau				https://drive.google.com/uc?export=download&id=1PaVV69M4Z36n3vW-9w9yAVKmjZkjDNRq
+		TargetLockController.luau			https://drive.google.com/uc?export=download&id=17QkoxGevfFoNBSU78-GzThMheEy-xShU
+		WallRun.luau						https://drive.google.com/uc?export=download&id=1PUNBmxe2Er5aPY8uJ7FSLBX5xsfXHAAX
+		

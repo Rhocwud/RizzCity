@@ -1,0 +1,24 @@
+# Rizz City - Project Changelog
+
+## 2025-09-06
+- Version 1.0.0
+- Initial baseline established for versioning system.
+- Scripts included in baseline:
+  - MovementController
+  - ClientInit
+  - Tuning
+  - FeatureFlags
+  - AnimationMap
+  - AnimationRegistry
+  - ZoneHud
+  - GlobalAnnouncements
+  - ClientBus
+  - WallRun
+  - CameraController
+  - TargetLockController
+  - Adjacency
+  - Constants
+
+- Notes:
+  - All scripts tagged with header template and set to v1.0.0.
+  - Future updates will increment patch/minor/major versions based on working milestones.

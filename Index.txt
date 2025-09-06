@@ -1,0 +1,43 @@
+📂 Rizz City – Archive Index
+
+Last Updated: 2025-09-06
+
+🟦 Modules & Services
+
+OldCombatService.luau → Early melee system, replaced during combat overhaul.
+Rating: 1 (may salvage functions/logic when refining CombatService).
+
+DashController.luau → Separate dash/evade logic. Replaced by MovementController’s integrated dash system.
+Rating: 2 (pieces of evade/dash code may be useful).
+
+RailGrindLegacy.luau → Early grind script. Buggy, replaced with MovementController grind.
+Rating: 2 (debug logic might be useful if grind breaks again).
+
+🟩 Assets & Animation
+
+SwordAnimations (Folder) → Old R6-based sword swing animations. Now using R15.
+Rating: 2 (may reference animation timing, but not reusable as-is).
+
+Legacy Combat Animations (Folder) → Placeholder punches/kicks, inconsistent rigging.
+Rating: 2 (could borrow timing ideas, but most will be replaced).
+
+🟨 Systems & Utilities
+
+FeatureFlag_Old.luau → Early version of feature flags before Shared/Config cleanup.
+Rating: 1 (may reuse toggle patterns if new flag system breaks).
+
+CameraController_Old.luau → Pre-target-lock camera. Replaced by current CameraController.
+Rating: 2 (some zoom/shift-lock handling could be recycled).
+
+Adjacency (Old).luau → Early territory zone adjacency system, later rewritten.
+Rating: 1 (may be reused once we finalize territory control logic).
+
+Notes
+
+1 = Most likely to reuse (code patterns, logic, configs still relevant).
+
+2 = Medium (may borrow ideas/snippets but outdated or partially replaced).
+
+3 = Least likely (tied to abandoned systems like lanes/hazards/R6).
+
+When pulling anything back, update its header version (e.g., v0.9.0 → v1.0.1) and log it in CHANGELOG.txt.
