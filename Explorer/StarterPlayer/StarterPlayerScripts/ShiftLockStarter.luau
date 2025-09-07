@@ -14,63 +14,68 @@ local shiftLockEnabled = true -- Start with shift lock enabled
 UIS.MouseIcon = "rbxassetid://3128012693"
 
 local function rotateCharacterToCamera()
-	local character = player.Character
-	local camera = game.Workspace.CurrentCamera
-	local rootPart = character:FindFirstChild("HumanoidRootPart")
+    local character = player.Character
+    local camera = game.Workspace.CurrentCamera
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
 
-	if rootPart then
-		local lookVector = camera.CFrame.LookVector
-		local flatLookVector = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
+    if rootPart then
+        local lookVector = camera.CFrame.LookVector
+        local flatLookVector = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
 
-		local targetCFrame = CFrame.new(rootPart.Position, rootPart.Position + flatLookVector)
-		rootPart.CFrame = targetCFrame
-	end
+        local targetCFrame = CFrame.new(rootPart.Position, rootPart.Position + flatLookVector)
+        rootPart.CFrame = targetCFrame
+    end
 end
 
 local function tweenOffset(bool)
-	local camera = workspace.CurrentCamera
-	local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
-	
-	if SS:FindFirstChild("ShiftLockSound") then
-		SS.ShiftLockSound:Play()
-	end
-	if bool then
-		UIS.MouseBehavior = Enum.MouseBehavior.Default
-		UIS.MouseIcon = "rbxassetid://10393593823"
+    local camera = workspace.CurrentCamera
+    local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
 
-		-- Tween Our Camera Offset
-		local TG = {CameraOffset = Vector3.new(2,0,0)}
-		local tween = TS:Create(char.Humanoid, TI, TG)
-		tween:Play()
+    if SS:FindFirstChild("ShiftLockSound") then
+        SS.ShiftLockSound:Play()
+    end
+    if bool then
+        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        UIS.MouseIcon = "rbxassetid://10393593823"
 
-		if renderConnection then renderConnection:Disconnect() end
-		
-		renderConnection = RS.RenderStepped:Connect(function()
-			UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-			task.wait()
-			rotateCharacterToCamera()
-		end)
-	else
-		UIS.MouseBehavior = Enum.MouseBehavior.Default
-		UIS.MouseIcon = "rbxassetid://3128012693"
+        -- Tween Our Camera Offset
+        local TG = { CameraOffset = Vector3.new(2, 0, 0) }
+        local tween = TS:Create(char.Humanoid, TI, TG)
+        tween:Play()
 
-		-- Tween Our Camera Offset
-		local TG = {CameraOffset = Vector3.new(0,0,0)}
-		local tween = TS:Create(char.Humanoid, TI, TG)
-		tween:Play()
+        if renderConnection then
+            renderConnection:Disconnect()
+        end
 
-		if renderConnection then renderConnection:Disconnect() end
-	end
+        renderConnection = RS.RenderStepped:Connect(function()
+            UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+            task.wait()
+            rotateCharacterToCamera()
+        end)
+    else
+        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        UIS.MouseIcon = "rbxassetid://3128012693"
+
+        -- Tween Our Camera Offset
+        local TG = { CameraOffset = Vector3.new(0, 0, 0) }
+        local tween = TS:Create(char.Humanoid, TI, TG)
+        tween:Play()
+
+        if renderConnection then
+            renderConnection:Disconnect()
+        end
+    end
 end
 
 -- Ensure shift lock is enabled at start
 tweenOffset(shiftLockEnabled)
 
 UIS.InputBegan:Connect(function(input, gps)
-	if gps then return end
-	if input.KeyCode == Enum.KeyCode.V then
-		shiftLockEnabled = not shiftLockEnabled
-		tweenOffset(shiftLockEnabled)
-	end
+    if gps then
+        return
+    end
+    if input.KeyCode == Enum.KeyCode.V then
+        shiftLockEnabled = not shiftLockEnabled
+        tweenOffset(shiftLockEnabled)
+    end
 end)
-
