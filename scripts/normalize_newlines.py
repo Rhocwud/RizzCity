@@ -3,6 +3,10 @@
 import os, sys
 
 ROOT = "Explorer"
+if not os.path.isdir(ROOT):
+    print("Root", ROOT, "not found. Run from repo root.")
+    sys.exit(0)
+
 count = 0
 for dirpath, _, filenames in os.walk(ROOT):
     for fname in filenames:
@@ -11,7 +15,6 @@ for dirpath, _, filenames in os.walk(ROOT):
         path = os.path.join(dirpath, fname)
         with open(path, "rb") as f:
             raw = f.read()
-        # replace CRLF with LF, also replace lone CR with LF
         normalized = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         if normalized != raw:
             with open(path, "wb") as f:
