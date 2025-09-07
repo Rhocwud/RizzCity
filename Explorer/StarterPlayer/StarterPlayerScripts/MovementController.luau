@@ -1,5 +1,5 @@
 --!strict
---This is a test to see if Google Drive works
+
 --====================================================--
 --  Script: [MovementController]
 --  Location: [StarterPlayer/StarterPlayerScripts/]
