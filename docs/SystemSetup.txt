@@ -7,7 +7,7 @@ This document explains the canonical project workflow and where project context 
 Primary principles
 - GitHub is the single source of truth for all .luau script source code.
 - Chat logs, design notes, and historical context live in the project folder (`docs/chat-logs/*.txt`) and are used for reasoning only (not as canonical code).
-- The assistant must always read this SystemSetup.txt first at the start of any chat.
+- The assistant should load SystemSetup.txt at the start of any chat and follow the procedures described.
 
 Components
 1) GitHub Repo (Live source of truth)
@@ -32,6 +32,13 @@ Components
    - NOTE: Because `raw.githubusercontent.com` serves raw repo files publicly only for **public** repos, the recommended pattern for private repos is:
      - keep the repo private; use the gist snapshot `raw` URLs in `ProjectInventory.csv` for assistant & tooling access, **or**
      - publish a selective public mirror of only the `.luau` files if you prefer stable public raw URLs. The CSV will record whichever `raw` URLs are available.
+	 NOTE: The workflow uses a Personal Access Token stored as a repository Secret named `GH_PAT`.  Do NOT paste tokens into chat. The assistant will never request tokens in-chat; the token must be added in Repository → Settings → Secrets and kept private.
+	
+Automation workflows expected:
+  - `.github/workflows/publish-and-inventory.yml`  # creates gist (optional) + ProjectInventory.csv
+  - `.github/workflows/generate-projectfilelinks.yml`  # generates docs/ProjectFileLinks.txt (raw.githubusercontent URLs or fallback)
+
+- Add `.gitattributes` to enforce LF for `.luau` files and a `scripts/normalize_newlines.py` to ensure snapshots preserve newlines for the assistant and raw outputs.
 
 4) Chat logs (Project Folder)
    - Stored in repo under `docs/chat-logs/` (files named `YYYYMMDD_topic.txt`).
@@ -39,7 +46,7 @@ Components
 
 How the assistant (ChatGPT) should behave at the start of a new chat
 1. Load `SystemSetup.txt` from the repo root. This file sets rules and file locations.  
-2. Read `docs/ProjectInventory.csv` (primary) then `docs/ProjectFileLinks.txt` (secondary) to discover current active code and raw URLs.  
+2. Read `docs/ProjectInventory.csv` (primary) then `docs/ProjectFileLinks.txt` (secondary) to discover current active code and raw URLs. The assistant prefers `ProjectInventory.csv`'s `raw_gist_url` field (if present). If `raw_gist_url` is missing / inaccessible, then the assistant will fall back to `docs/ProjectFileLinks.txt`.
 3. If a file is requested or Tyler is working on a task, fetch the file from the `raw` URL recorded in `docs/ProjectInventory.csv` (preferred). If that `raw` URL points to a gist/raw that is reachable, fetch and show requested lines. If `raw` URL is 403 or missing, consult `docs/ProjectFileLinks.txt` for fallback repo raw URLs or ask the developer to re-run the inventory workflow (do not request PATs in chat).  
 4. If system-history or design reasoning is required, consult `docs/chat-logs/*`, `Index.txt`, or `Project Changelog.txt`.
 
