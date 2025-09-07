@@ -23,66 +23,80 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Record source commit SHA (pin URLs to this)
+        run: |
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
       - name: Ensure docs folder exists
         run: mkdir -p docs
-
-      - name: Capture repository identity & source commit (to pin raw URLs)
-        run: |
-          echo "REPO_FULL=$GITHUB_REPOSITORY" >> "$GITHUB_ENV"
-          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Setup Python 3
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: Generate docs/ProjectInventory.csv (raw_repo_url + wc-style line_count)
+      - name: Generate docs/ProjectInventory.csv (pinned raw URLs + wc-style line_count)
         env:
           ROOT: ${{ env.ROOT }}
           OUT_CSV: ${{ env.OUT_CSV }}
-          REPO_FULL: ${{ env.REPO_FULL }}
-          COMMIT_SHA: ${{ env.COMMIT_SHA }}
+          SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          REPO_SLUG: ${{ github.repository }}   # <owner>/<repo>
         run: |
+          set -euo pipefail
           python3 - <<'PY'
-          import os, csv, sys
+          import csv, os, sys
 
-          ROOT = os.environ.get("ROOT", "Explorer")
-          OUT_CSV = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
-          REPO_FULL = os.environ.get("REPO_FULL", "")
-          COMMIT_SHA = os.environ.get("COMMIT_SHA", "")
+          ROOT        = os.environ.get("ROOT", "Explorer")
+          OUT_CSV     = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
+          SOURCE_SHA  = os.environ.get("SOURCE_SHA") or ""
+          REPO_SLUG   = os.environ.get("REPO_SLUG")  or ""
 
-          if "/" not in REPO_FULL or not COMMIT_SHA:
-              print("Missing REPO_FULL/COMMIT_SHA", file=sys.stderr)
+          if not SOURCE_SHA or not REPO_SLUG:
+              print("Missing SOURCE_SHA or REPO_SLUG env.", file=sys.stderr)
               sys.exit(2)
 
-          owner, repo = REPO_FULL.split("/", 1)
-          base = os.getcwd()
+          repo_root = os.getcwd()
+          rows = []
 
-          inventory = []
+          # Collect .luau files deterministically
           if os.path.isdir(ROOT):
               for dirpath, dirnames, filenames in os.walk(ROOT):
-                  filenames.sort()
-                  for fn in filenames:
+                  dirnames.sort()
+                  for fn in sorted(filenames):
                       if not fn.lower().endswith(".luau"):
                           continue
-                      full_path = os.path.join(dirpath, fn)
-                      rel = os.path.relpath(full_path, base).replace("\\", "/")
-                      with open(full_path, "rb") as fh:
-                          raw = fh.read()
-                      # wc -l semantics: count '\n' bytes
-                      line_count = raw.count(b"\n")
-                      byte_size = len(raw)
-                      raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{COMMIT_SHA}/{rel}"
-                      inventory.append((os.path.basename(rel), rel, raw_url, COMMIT_SHA, line_count, byte_size))
+                      full = os.path.join(dirpath, fn)
+                      rel  = os.path.relpath(full, repo_root).replace("\\", "/")
 
+                      with open(full, "rb") as fh:
+                          raw = fh.read()
+
+                      # wc -l semantics: count of '\n'
+                      line_count = raw.count(b"\n")
+                      byte_size  = len(raw)
+
+                      raw_url = f"https://raw.githubusercontent.com/{REPO_SLUG}/{SOURCE_SHA}/{rel}"
+
+                      rows.append({
+                          "filename":   os.path.basename(rel),
+                          "repo_path":  rel,
+                          "raw_repo_url": raw_url,
+                          "commit_sha": SOURCE_SHA,
+                          "line_count": line_count,
+                          "byte_size":  byte_size,
+                      })
+
+          # Ensure docs folder exists
           os.makedirs(os.path.dirname(OUT_CSV), exist_ok=True)
+
+          # Write CSV
           with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
               w = csv.writer(f)
               w.writerow(["filename","repo_path","raw_repo_url","commit_sha","line_count","byte_size"])
-              for row in inventory:
-                  w.writerow(row)
+              for r in rows:
+                  w.writerow([r["filename"], r["repo_path"], r["raw_repo_url"], r["commit_sha"], r["line_count"], r["byte_size"]])
 
-          print(f"Wrote inventory to {OUT_CSV} with {len(inventory)} entries (pinned {COMMIT_SHA}).")
+          print(f"Wrote {OUT_CSV} with {len(rows)} entries at commit {SOURCE_SHA}")
           PY
 
       - name: Commit & push ProjectInventory.csv (if changed)
@@ -93,24 +107,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add "${OUT_CSV}" || true
 
+          # If there are no staged changes, exit cleanly and mark changed=false
           if git diff --staged --quiet; then
             echo "No changes to commit."
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git commit -m "chore: regenerate ProjectInventory.csv (auto)"
+          git commit -m "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
 
-          # Auth & push logic (safe push to main; else PR)
+          # Prepare auth for pushing
           remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
           git remote set-url origin "$remote_url"
 
+          # Fetch current remote main
           git fetch origin main
+
           LOCAL=$(git rev-parse @)
           REMOTE=$(git rev-parse origin/main)
           BASE=$(git merge-base @ origin/main)
@@ -120,10 +137,11 @@ jobs:
             git push origin HEAD:main
             echo "pushed_direct=true" >> "$GITHUB_OUTPUT"
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "pr_branch=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "Remote advanced; pushing to a branch and opening PR."
+          echo "origin/main changed — pushing to a branch and opening PR."
           pr_branch="projectinventory/update-${GITHUB_RUN_ID}"
           git push origin HEAD:"${pr_branch}" --force-with-lease
           echo "pr_branch=${pr_branch}" >> "$GITHUB_OUTPUT"
@@ -131,16 +149,17 @@ jobs:
 
       - name: Create Pull Request if we pushed a branch
         if: ${{ steps.commit.outputs.pr_branch != '' }}
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GH_PAT }}
-          commit-message: "chore: regenerate ProjectInventory.csv"
-          title: "chore: regenerate ProjectInventory.csv"
+          commit-message: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
+          title: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           body: |
             Auto-generated update of ProjectInventory.csv.
-            Raw URLs are pinned to the source commit used during generation.
+            - Only CSV is produced (no gist, no mapping txt).
+            - raw_repo_url is pinned to SOURCE_SHA.
+            - line_count is wc-style to catch newline issues immediately.
           base: main
           head: ${{ steps.commit.outputs.pr_branch }}
           labels: auto-generated
           draft: false
-
