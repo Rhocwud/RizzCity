@@ -4,7 +4,7 @@ name: Generate ProjectFileLinks
 on:
   workflow_dispatch: {}
   schedule:
-    # Every 30 minutes
+    # Every 60 minutes
     - cron: '*/60 * * * *'
 
 permissions:
@@ -37,32 +37,65 @@ jobs:
         run: mkdir -p docs
 
       - name: Generate ProjectFileLinks.txt
+        id: genfile
         run: |
+          set -euo pipefail
+          OUT="${OUT}"
+          ROOT="${ROOT}"
+          USER="${USER}"
+          REPO="${REPO}"
+          BRANCH="${BRANCH}"
+
           echo "# Auto-generated ProjectFileLinks.txt" > "$OUT"
           echo "# Generated: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$OUT"
           echo "" >> "$OUT"
-          # Find all .luau files under the designated ROOT folder and write raw URLs
-          find "$ROOT" -type f -name "*.luau" | sort | while read -r f; do
-            fname=$(basename "$f")
-            rel="${f#${ROOT}/}"
-            url="https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/$ROOT/$rel"
-            printf "%s | %s | %s | %s\n" "$fname" "$rel" "$url" "$(date +%F)" >> "$OUT"
-          done
-          echo "Wrote $OUT with $(wc -l < $OUT) lines."
 
-      - name: Commit changes (if any)
+          if [ ! -d "$ROOT" ]; then
+            echo "Warning: root folder '$ROOT' not found. Writing empty mapping." >> "$OUT"
+          else
+            find "$ROOT" -type f -name "*.luau" | sort | while read -r f; do
+              # compute repo-relative path
+              # remove leading "./" if present
+              rel="${f#./}"
+              # if find returns path starting with ROOT/, fine; else ensure prefix
+              if [[ "$rel" != "$ROOT/"* ]]; then
+                rel="$ROOT/${rel}"
+              fi
+              # normalize rel to not have leading slash
+              rel_clean="${rel#./}"
+              rel_clean="${rel_clean#/}"
+              url="https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/$rel_clean"
+              printf "%s | %s | %s | %s\n" "$(basename "$f")" "$rel_clean" "$url" "$(date +%F)" >> "$OUT"
+            done
+          fi
+
+          echo "Wrote $OUT with $(wc -l < "$OUT") lines."
+
+      - name: Commit changes (if any) and set changed output
+        id: commit
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$OUT"
-          # If there are no staged changes, exit cleanly
+
+          git add "$OUT" || true
+
+          # If there are no staged changes, set changed=false and exit cleanly
           if git diff --staged --quiet; then
             echo "No changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          # Commit the changes locally (create a commit on the checked-out branch)
           git commit -m "chore: regenerate ProjectFileLinks.txt"
 
+          # Signal that changes exist for downstream steps
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+        # Note: no push here; the create-pull-request action will create a branch and push it using the provided token
+
       - name: Create Pull Request if changed
+        if: steps.commit.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GH_PAT }}
