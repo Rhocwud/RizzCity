@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  snapshot-and-inventory:
+  normalize-and-inventory:
     runs-on: ubuntu-latest
     env:
       ROOT: Explorer
@@ -23,100 +23,79 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Record source commit SHA (pin URLs to this)
-        run: |
-          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      # --- NORMALIZATION GUARD (one-and-done unless someone reintroduces CRLF) ---
 
-      - name: Ensure docs folder exists
-        run: mkdir -p docs
-
-      - name: Setup Python 3
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Generate docs/ProjectInventory.csv (pinned raw URLs + wc-style line_count)
-        env:
-          ROOT: ${{ env.ROOT }}
-          OUT_CSV: ${{ env.OUT_CSV }}
-          SOURCE_SHA: ${{ env.SOURCE_SHA }}
-          REPO_SLUG: ${{ github.repository }}   # <owner>/<repo>
+      - name: Ensure .gitattributes rule for Luau (LF)
+        id: gitattributes
+        shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import csv, os, sys
-
-          ROOT        = os.environ.get("ROOT", "Explorer")
-          OUT_CSV     = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
-          SOURCE_SHA  = os.environ.get("SOURCE_SHA") or ""
-          REPO_SLUG   = os.environ.get("REPO_SLUG")  or ""
-
-          if not SOURCE_SHA or not REPO_SLUG:
-              print("Missing SOURCE_SHA or REPO_SLUG env.", file=sys.stderr)
-              sys.exit(2)
-
-          repo_root = os.getcwd()
-          rows = []
-
-          if os.path.isdir(ROOT):
-              for dirpath, dirnames, filenames in os.walk(ROOT):
-                  dirnames.sort()
-                  for fn in sorted(filenames):
-                      if not fn.lower().endswith(".luau"):
-                          continue
-                      full = os.path.join(dirpath, fn)
-                      rel  = os.path.relpath(full, repo_root).replace("\\", "/")
-
-                      with open(full, "rb") as fh:
-                          raw = fh.read()
-
-                      # wc -l semantics: count of '\n'
-                      line_count = raw.count(b"\n")
-                      byte_size  = len(raw)
-
-                      raw_url = f"https://raw.githubusercontent.com/{REPO_SLUG}/{SOURCE_SHA}/{rel}"
-
-                      rows.append({
-                          "filename":     os.path.basename(rel),
-                          "repo_path":    rel,
-                          "raw_repo_url": raw_url,
-                          "commit_sha":   SOURCE_SHA,
-                          "line_count":   line_count,
-                          "byte_size":    byte_size,
-                      })
-
-          os.makedirs(os.path.dirname(OUT_CSV), exist_ok=True)
-
-          with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
-              w = csv.writer(f)
-              w.writerow(["filename","repo_path","raw_repo_url","commit_sha","line_count","byte_size"])
-              for r in rows:
-                  w.writerow([r["filename"], r["repo_path"], r["raw_repo_url"], r["commit_sha"], r["line_count"], r["byte_size"]])
-
-          print(f"Wrote {OUT_CSV} with {len(rows)} entries at commit {SOURCE_SHA}")
-          PY
-
-      - name: Commit & push ProjectInventory.csv (if changed)
-        id: commit
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          OUT_CSV: ${{ env.OUT_CSV }}
-        run: |
-          set -euo pipefail
-
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add "${OUT_CSV}" || true
-
-          if git diff --staged --quiet; then
-            echo "No changes to commit."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          touch .gitattributes
+          if ! grep -qxF "*.luau text eol=lf" .gitattributes; then
+            echo "*.luau text eol=lf" >> .gitattributes
+            echo "added_rule=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "added_rule=false" >> "$GITHUB_OUTPUT"
           fi
 
-          git commit -m "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
+      - name: Detect CRLF or suspicious single-line Luau files
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEEDS=false
+          CR_FILES=$( (git ls-files '${{ env.ROOT }}'/**/*.luau || true) | xargs -r file -I | awk -F: '$0 ~ /charset=binary/ {next} {print $1}' | xargs -r grep -Il $'\r' || true )
+          if [ -n "${CR_FILES}" ]; then
+            echo "Found CRLF in:"
+            echo "${CR_FILES}"
+            NEEDS=true
+          fi
 
+          # Check for suspiciously low newline count (<= 2) in reasonably sized files (> 200 bytes)
+          ONE_LINE=""
+          while IFS= read -r -d '' f; do
+            sz=$(wc -c < "$f")
+            nl=$(tr -cd '\n' < "$f" | wc -c)
+            if [ "$sz" -gt 200 ] && [ "$nl" -le 2 ]; then
+              ONE_LINE+="$f"$'\n'
+            fi
+          done < <(find "${{ env.ROOT }}" -type f -name "*.luau" -print0)
+
+          if [ -n "${ONE_LINE}" ]; then
+            echo "Files with suspiciously low newline counts:"
+            printf "%s" "${ONE_LINE}"
+            NEEDS=true
+          fi
+
+          if [ "${{ steps.gitattributes.outputs.added_rule }}" = "true" ]; then
+            NEEDS=true
+          fi
+
+          echo "needs_normalize=${NEEDS}" >> "$GITHUB_OUTPUT"
+
+      - name: Normalize EOLs and stage changes
+        if: ${{ steps.detect.outputs.needs_normalize == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add .gitattributes
+          git add --renormalize .
+          if git diff --staged --quiet; then
+            echo "Nothing to normalize after staging."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Normalize .luau line endings to LF (.gitattributes + renormalize)"
+
+      - name: Push normalization (safe) or create PR
+        if: ${{ steps.detect.outputs.needs_normalize == 'true' }}
+        id: norm_push
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
           remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
           git remote set-url origin "$remote_url"
 
@@ -126,34 +105,136 @@ jobs:
           BASE=$(git merge-base @ origin/main)
 
           if [ "$REMOTE" = "$BASE" ]; then
-            echo "Remote origin/main is ancestor — pushing directly."
+            echo "Pushing normalization directly to main."
+            git push origin HEAD:main
+            echo "mode=direct" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "origin/main changed — creating PR for normalization."
+          PR_BRANCH="normalize-luau-eol/${GITHUB_RUN_ID}"
+          git push origin HEAD:"${PR_BRANCH}" --force-with-lease
+          echo "mode=pr" >> "$GITHUB_OUTPUT"
+          echo "pr_branch=${PR_BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR for normalization
+        if: ${{ steps.norm_push.outputs.mode == 'pr' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          branch: ${{ steps.norm_push.outputs.pr_branch }}
+          base: main
+          title: "chore: normalize .luau line endings to LF"
+          body: |
+            Automated EOL normalization:
+            - Ensured `.gitattributes` contains `*.luau text eol=lf`.
+            - Rewrote tracked `.luau` files to LF (`git add --renormalize .`).
+            Merge this PR, then the next scheduled run will generate an updated ProjectInventory.csv.
+          commit-message: "chore: normalize .luau line endings to LF"
+          labels: auto-generated
+          draft: false
+          delete-branch: true
+
+      - name: Stop run (await normalization PR merge)
+        if: ${{ steps.norm_push.outputs.mode == 'pr' }}
+        run: |
+          echo "Normalization PR opened; skipping inventory for this run."
+          exit 0
+
+      # --- INVENTORY (runs if no normalization needed OR we pushed directly to main) ---
+
+      - name: Record source commit SHA (pin URLs to this)
+        run: |
+          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Generate docs/ProjectInventory.csv (pinned raw URLs + wc-style line_count)
+        env:
+          ROOT: ${{ env.ROOT }}
+          OUT_CSV: ${{ env.OUT_CSV }}
+          SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          REPO_SLUG: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv, os, sys
+          ROOT        = os.environ.get("ROOT", "Explorer")
+          OUT_CSV     = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
+          SOURCE_SHA  = os.environ.get("SOURCE_SHA") or ""
+          REPO_SLUG   = os.environ.get("REPO_SLUG")  or ""
+          if not SOURCE_SHA or not REPO_SLUG:
+            print("Missing SOURCE_SHA or REPO_SLUG env.", file=sys.stderr); sys.exit(2)
+
+          base = os.getcwd()
+          rows = []
+          if os.path.isdir(ROOT):
+            for dirpath, dirnames, filenames in os.walk(ROOT):
+              dirnames.sort()
+              for fn in sorted(filenames):
+                if not fn.lower().endswith(".luau"): continue
+                full = os.path.join(dirpath, fn)
+                rel  = os.path.relpath(full, base).replace("\\", "/")
+                with open(full, "rb") as fh: raw = fh.read()
+                line_count = raw.count(b"\n")   # wc -l semantics
+                byte_size  = len(raw)
+                raw_url = f"https://raw.githubusercontent.com/{REPO_SLUG}/{SOURCE_SHA}/{rel}"
+                rows.append([os.path.basename(rel), rel, raw_url, SOURCE_SHA, line_count, byte_size])
+
+          os.makedirs(os.path.dirname(OUT_CSV), exist_ok=True)
+          with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["filename","repo_path","raw_repo_url","commit_sha","line_count","byte_size"])
+            w.writerows(rows)
+          print(f"Wrote {OUT_CSV} with {len(rows)} entries at commit {SOURCE_SHA}")
+          PY
+
+      - name: Commit & push ProjectInventory.csv (if changed)
+        id: inv_commit
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          OUT_CSV: ${{ env.OUT_CSV }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${OUT_CSV}" || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
+          remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote set-url origin "$remote_url"
+          git fetch origin main
+          LOCAL=$(git rev-parse @)
+          REMOTE=$(git rev-parse origin/main)
+          BASE=$(git merge-base @ origin/main)
+          if [ "$REMOTE" = "$BASE" ]; then
+            echo "Pushing inventory directly to main."
             git push origin HEAD:main
             echo "pushed_direct=true" >> "$GITHUB_OUTPUT"
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "pr_branch=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          echo "origin/main changed — pushing to a branch and opening PR."
+          echo "origin/main changed — pushing inventory to a branch and opening PR."
           pr_branch="projectinventory/update-${GITHUB_RUN_ID}"
           git push origin HEAD:"${pr_branch}" --force-with-lease
           echo "pr_branch=${pr_branch}" >> "$GITHUB_OUTPUT"
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Create Pull Request if we pushed a branch
-        if: ${{ steps.commit.outputs.pr_branch != '' }}
+      - name: Create Pull Request for inventory
+        if: ${{ steps.inv_commit.outputs.pr_branch != '' }}
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GH_PAT }}
-          branch: ${{ steps.commit.outputs.pr_branch }}   # fixed: use 'branch', not 'head'
+          branch: ${{ steps.inv_commit.outputs.pr_branch }}
           base: main
           commit-message: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           title: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           body: |
             Auto-generated update of ProjectInventory.csv.
-            - Only CSV is produced (no gist, no mapping txt).
-            - raw_repo_url is pinned to SOURCE_SHA.
-            - line_count is wc-style to catch newline issues immediately.
+            raw_repo_url is pinned to the commit that generated this file.
           labels: auto-generated
           draft: false
           delete-branch: true
