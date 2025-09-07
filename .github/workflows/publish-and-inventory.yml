@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  normalize-and-inventory:
+  format-and-inventory:
     runs-on: ubuntu-latest
     env:
       ROOT: Explorer
@@ -17,13 +17,13 @@ jobs:
       GH_PAT: ${{ secrets.GH_PAT }}
 
     steps:
-      - name: Checkout repo (full history)
+      - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      # ---------- ONE-TIME (GUARD) NORMALIZATION ----------
+      # ---------- ONE-TIME + GUARD: enforce LF for .luau ----------
       - name: Ensure .gitattributes rule for Luau (LF)
         id: gitattributes
         shell: bash
@@ -37,61 +37,24 @@ jobs:
             echo "added_rule=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Detect CRLF or suspicious single-line Luau files
-        id: detect
-        shell: bash
-        run: |
-          set -euo pipefail
-          NEEDS=false
-
-          # Find CRLF
-          CR_FILES=$( (git ls-files '${{ env.ROOT }}'/**/*.luau || true) | xargs -r grep -Il $'\r' || true )
-          if [ -n "${CR_FILES}" ]; then
-            echo "Found CRLF in:"
-            echo "${CR_FILES}"
-            NEEDS=true
-          fi
-
-          # Files with very few newlines (<=2) but non-trivial size (>200B)
-          ONE_LINE=""
-          while IFS= read -r -d '' f; do
-            sz=$(wc -c < "$f")
-            nl=$(tr -cd '\n' < "$f" | wc -c)
-            if [ "$sz" -gt 200 ] && [ "$nl" -le 2 ]; then
-              ONE_LINE+="$f"$'\n'
-            fi
-          done < <(find "${{ env.ROOT }}" -type f -name "*.luau" -print0)
-
-          if [ -n "${ONE_LINE}" ]; then
-            echo "Low-newline files:"
-            printf "%s" "${ONE_LINE}"
-            NEEDS=true
-          fi
-
-          if [ "${{ steps.gitattributes.outputs.added_rule }}" = "true" ]; then
-            NEEDS=true
-          fi
-
-          echo "needs_normalize=${NEEDS}" >> "$GITHUB_OUTPUT"
-
-      - name: Normalize EOLs and commit (if needed)
-        if: ${{ steps.detect.outputs.needs_normalize == 'true' }}
+      - name: Renormalize tracked files to LF (if needed)
+        if: ${{ steps.gitattributes.outputs.added_rule == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           git add .gitattributes
           git add --renormalize .
           if git diff --staged --quiet; then
-            echo "Nothing to normalize after staging."
+            echo "No EOL changes to commit."
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Normalize .luau line endings to LF (.gitattributes + renormalize)"
+          git commit -m "chore: enforce LF for .luau via .gitattributes + renormalize"
 
-      - name: Push normalization (safe) or open PR
-        if: ${{ steps.detect.outputs.needs_normalize == 'true' }}
-        id: norm_push
+      - name: Push EOL normalization (safe) or open PR
+        if: ${{ steps.gitattributes.outputs.added_rule == 'true' }}
+        id: eol_push
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         shell: bash
@@ -106,8 +69,8 @@ jobs:
           BASE=$(git merge-base @ origin/main)
 
           if [ "$REMOTE" = "$BASE" ]; then
-            echo "mode=direct" >> "$GITHUB_OUTPUT"
             git push origin HEAD:main
+            echo "mode=direct" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -116,107 +79,145 @@ jobs:
           echo "mode=pr" >> "$GITHUB_OUTPUT"
           echo "pr_branch=${PR_BRANCH}" >> "$GITHUB_OUTPUT"
 
-      - name: Create PR for normalization
-        if: ${{ steps.norm_push.outputs.mode == 'pr' }}
+      - name: Create PR for EOL normalization
+        if: ${{ steps.eol_push.outputs.mode == 'pr' }}
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GH_PAT }}
-          branch: ${{ steps.norm_push.outputs.pr_branch }}
+          branch: ${{ steps.eol_push.outputs.pr_branch }}
           base: main
-          title: "chore: normalize .luau line endings to LF"
-          body: |
-            Automated EOL normalization:
-            - Ensured `.gitattributes` contains `*.luau text eol=lf`.
-            - Rewrote tracked `.luau` files to LF (`git add --renormalize .`).
-            Merge this PR; next run will generate a fresh ProjectInventory.csv.
-          commit-message: "chore: normalize .luau line endings to LF"
+          title: "chore: enforce LF for .luau"
+          body: "Adds .gitattributes rule and renormalizes tracked .luau files to LF."
+          commit-message: "chore: enforce LF for .luau"
           labels: auto-generated
           draft: false
           delete-branch: true
 
-      - name: Stop; awaiting normalization PR merge
-        if: ${{ steps.norm_push.outputs.mode == 'pr' }}
+      - name: Stop run (await EOL PR merge)
+        if: ${{ steps.eol_push.outputs.mode == 'pr' }}
         run: |
-          echo "Normalization PR opened; skipping inventory for this run."
+          echo "EOL normalization PR opened; skipping formatting/inventory for this run."
           exit 0
 
-      # ---------- INVENTORY + ASSISTANT SNAPSHOT (SECRET GIST) ----------
+      # ---------- FORMAT: StyLua reflows Explorer/**/*.luau to multi-line ----------
+      - name: Install StyLua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: 0.20.1
+          args: --version
+
+      - name: Run StyLua (format in place)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Format only Explorer/**/*.luau (config also limits scope)
+          stylua Explorer
+
+      - name: Commit formatted files (if any)
+        id: fmt_commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git status --porcelain | grep -q .; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "style: format Luau with StyLua"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No formatting changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push formatting (safe) or open PR
+        if: ${{ steps.fmt_commit.outputs.changed == 'true' }}
+        id: fmt_push
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote set-url origin "$remote_url"
+
+          git fetch origin main
+          LOCAL=$(git rev-parse @)
+          REMOTE=$(git rev-parse origin/main)
+          BASE=$(git merge-base @ origin/main)
+
+          if [ "$REMOTE" = "$BASE" ]; then
+            git push origin HEAD:main
+            echo "mode=direct" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PR_BRANCH="stylua/format-${GITHUB_RUN_ID}"
+          git push origin HEAD:"${PR_BRANCH}" --force-with-lease
+          echo "mode=pr" >> "$GITHUB_OUTPUT"
+          echo "pr_branch=${PR_BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR for formatting
+        if: ${{ steps.fmt_push.outputs.mode == 'pr' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          branch: ${{ steps.fmt_push.outputs.pr_branch }}
+          base: main
+          title: "style: format Luau with StyLua"
+          body: "Automated formatting of Explorer/**/*.luau via StyLua."
+          commit-message: "style: format Luau with StyLua"
+          labels: auto-generated
+          draft: false
+          delete-branch: true
+
+      - name: Stop run (await formatting PR merge)
+        if: ${{ steps.fmt_push.outputs.mode == 'pr' }}
+        run: |
+          echo "Formatting PR opened; skipping inventory for this run."
+          exit 0
+
+      # ---------- INVENTORY: generate CSV pinned to post-format commit ----------
       - name: Record source commit SHA (pin URLs)
         run: echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - name: Build CSV and create secret gist for assistant access
+      - name: Generate docs/ProjectInventory.csv (pinned raw URLs + wc-style line_count)
         env:
           ROOT: ${{ env.ROOT }}
           OUT_CSV: ${{ env.OUT_CSV }}
           SOURCE_SHA: ${{ env.SOURCE_SHA }}
           REPO_SLUG: ${{ github.repository }}
-          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os, sys, csv, json, base64, requests
-
+          import csv, os, sys
           ROOT        = os.environ.get("ROOT", "Explorer")
           OUT_CSV     = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
           SOURCE_SHA  = os.environ["SOURCE_SHA"]
           REPO_SLUG   = os.environ["REPO_SLUG"]
-          TOKEN       = os.environ["GH_PAT"]
 
-          owner, repo = REPO_SLUG.split("/", 1)
           base = os.getcwd()
-
-          # Collect files and content
           rows = []
-          gist_files = {}
           if os.path.isdir(ROOT):
             for dirpath, dirnames, filenames in os.walk(ROOT):
               dirnames.sort()
               for fn in sorted(filenames):
-                if not fn.lower().endswith(".luau"): continue
+                if not fn.lower().endswith(".luau"):
+                  continue
                 full = os.path.join(dirpath, fn)
                 rel  = os.path.relpath(full, base).replace("\\", "/")
                 with open(full, "rb") as fh:
                   raw = fh.read()
-                line_count = raw.count(b"\n")
+                line_count = raw.count(b"\n")  # wc -l semantics
                 byte_size  = len(raw)
-                raw_repo_url = f"https://raw.githubusercontent.com/{REPO_SLUG}/{SOURCE_SHA}/{rel}"
+                raw_url    = f"https://raw.githubusercontent.com/{REPO_SLUG}/{SOURCE_SHA}/{rel}"
+                rows.append([os.path.basename(rel), rel, raw_url, SOURCE_SHA, line_count, byte_size])
 
-                # Put the exact file bytes into the gist as UTF-8 text (safe; we know these are text)
-                text = raw.decode("utf-8", errors="replace")
-                gist_name = rel.replace("/", "__")
-                gist_files[gist_name] = {"content": text}
-
-                rows.append({
-                  "filename": os.path.basename(rel),
-                  "repo_path": rel,
-                  "raw_repo_url": raw_repo_url,
-                  "commit_sha": SOURCE_SHA,
-                  "line_count": line_count,
-                  "byte_size": byte_size,
-                  # assistant_url to be filled after gist creation
-                })
-
-          # Create a secret gist that mirrors only the .luau text
-          headers = {"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github+json"}
-          payload = {"description": f"RizzCity Luau snapshot @ {SOURCE_SHA}", "public": False, "files": gist_files}
-          r = requests.post("https://api.github.com/gists", headers=headers, data=json.dumps(payload))
-          if r.status_code not in (200, 201):
-            print("WARNING: failed to create gist snapshot:", r.status_code, r.text, file=sys.stderr)
-            gist_files_resp = {}
-          else:
-            gist = r.json()
-            gist_files_resp = gist.get("files", {})
-
-          # Write CSV including assistant_url (gist raw) when available
           os.makedirs(os.path.dirname(OUT_CSV), exist_ok=True)
           with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
-            w.writerow(["filename","repo_path","raw_repo_url","assistant_url","commit_sha","line_count","byte_size"])
-            for row in rows:
-              gist_name = row["repo_path"].replace("/", "__")
-              assistant_url = gist_files_resp.get(gist_name, {}).get("raw_url", "")
-              w.writerow([row["filename"], row["repo_path"], row["raw_repo_url"], assistant_url, row["commit_sha"], row["line_count"], row["byte_size"]])
-
+            w.writerow(["filename","repo_path","raw_repo_url","commit_sha","line_count","byte_size"])
+            w.writerows(rows)
           print(f"Wrote {OUT_CSV} with {len(rows)} entries at commit {SOURCE_SHA}")
           PY
 
@@ -235,7 +236,7 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git commit -m "chore: regenerate ProjectInventory.csv (pinned raw + assistant gist URLs)"
+          git commit -m "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
           git remote set-url origin "$remote_url"
           git fetch origin main
@@ -258,13 +259,9 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           branch: ${{ steps.inv_commit.outputs.pr_branch }}
           base: main
-          commit-message: "chore: regenerate ProjectInventory.csv (pinned raw + assistant gist URLs)"
-          title: "chore: regenerate ProjectInventory.csv (pinned raw + assistant gist URLs)"
-          body: |
-            CSV now includes:
-            - raw_repo_url (pinned to commit)
-            - assistant_url (secret gist raw, anonymous readable)
-            - commit_sha, line_count (wc-style), byte_size
+          title: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
+          body: "Auto-generated inventory pinned to the commit used for generation."
+          commit-message: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           labels: auto-generated
           draft: false
           delete-branch: true
