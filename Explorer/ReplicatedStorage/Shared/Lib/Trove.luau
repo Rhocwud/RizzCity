@@ -2,34 +2,31 @@
 -- Stephen Leitnick
 -- October 16, 2021
 
-
 local FN_MARKER = newproxy()
 
 local RunService = game:GetService("RunService")
 
-
 local function GetObjectCleanupFunction(object, cleanupMethod)
-	local t = typeof(object)
-	if t == "function" then
-		return FN_MARKER
-	end
-	if cleanupMethod then
-		return cleanupMethod
-	end
-	if t == "Instance" then
-		return "Destroy"
-	elseif t == "RBXScriptConnection" then
-		return "Disconnect"
-	elseif t == "table" then
-		if typeof(object.Destroy) == "function" then
-			return "Destroy"
-		elseif typeof(object.Disconnect) == "function" then
-			return "Disconnect"
-		end
-	end
-	error("Failed to get cleanup function for object " .. t .. ": " .. tostring(object))
+    local t = typeof(object)
+    if t == "function" then
+        return FN_MARKER
+    end
+    if cleanupMethod then
+        return cleanupMethod
+    end
+    if t == "Instance" then
+        return "Destroy"
+    elseif t == "RBXScriptConnection" then
+        return "Disconnect"
+    elseif t == "table" then
+        if typeof(object.Destroy) == "function" then
+            return "Destroy"
+        elseif typeof(object.Disconnect) == "function" then
+            return "Disconnect"
+        end
+    end
+    error("Failed to get cleanup function for object " .. t .. ": " .. tostring(object))
 end
-
 
 --[=[
 	@class Trove
@@ -39,16 +36,14 @@ end
 local Trove = {}
 Trove.__index = Trove
 
-
 --[=[
 	Constructs a Trove object.
 ]=]
 function Trove.new()
-	local self = setmetatable({}, Trove)
-	self._objects = {}
-	return self
+    local self = setmetatable({}, Trove)
+    self._objects = {}
+    return self
 end
-
 
 --[=[
 	@param class table | (...any) -> any
@@ -81,16 +76,15 @@ end
 	```
 ]=]
 function Trove:Construct(class, ...)
-	local object = nil
-	local t = type(class)
-	if t == "table" then
-		object = class.new(...)
-	elseif t == "function" then
-		object = class(...)
-	end
-	return self:Add(object)
+    local object = nil
+    local t = type(class)
+    if t == "table" then
+        object = class.new(...)
+    elseif t == "function" then
+        object = class(...)
+    end
+    return self:Add(object)
 end
-
 
 --[=[
 	@param signal RBXScriptSignal
@@ -106,9 +100,8 @@ end
 	```
 ]=]
 function Trove:Connect(signal, fn)
-	return self:Add(signal:Connect(fn))
+    return self:Add(signal:Connect(fn))
 end
-
 
 --[=[
 	@param name string
@@ -124,12 +117,11 @@ end
 	```
 ]=]
 function Trove:BindToRenderStep(name: string, priority: number, fn: (dt: number) -> nil)
-	RunService:BindToRenderStep(name, priority, fn)
-	self:Add(function()
-		RunService:UnbindFromRenderStep(name)
-	end)
+    RunService:BindToRenderStep(name, priority, fn)
+    self:Add(function()
+        RunService:UnbindFromRenderStep(name)
+    end)
 end
-
 
 --[=[
 	@param object any -- Object to track
@@ -176,11 +168,10 @@ end
 	```
 ]=]
 function Trove:Add(object: any, cleanupMethod: string?): any
-	local cleanup = GetObjectCleanupFunction(object, cleanupMethod)
-	table.insert(self._objects, {object, cleanup})
-	return object
+    local cleanup = GetObjectCleanupFunction(object, cleanupMethod)
+    table.insert(self._objects, { object, cleanup })
+    return object
 end
-
 
 --[=[
 	@param object any -- Object to remove
@@ -193,19 +184,18 @@ end
 	```
 ]=]
 function Trove:Remove(object: any): boolean
-	local objects = self._objects
-	for i,obj in ipairs(objects) do
-		if obj[1] == object then
-			local n = #objects
-			objects[i] = objects[n]
-			objects[n] = nil
-			self:_cleanupObject(obj[1], obj[2])
-			return true
-		end
-	end
-	return false
+    local objects = self._objects
+    for i, obj in ipairs(objects) do
+        if obj[1] == object then
+            local n = #objects
+            objects[i] = objects[n]
+            objects[n] = nil
+            self:_cleanupObject(obj[1], obj[2])
+            return true
+        end
+    end
+    return false
 end
-
 
 --[=[
 	Cleans up all objects in the trove. This is
@@ -213,21 +203,19 @@ end
 	within the trove.
 ]=]
 function Trove:Clean()
-	for _,obj in ipairs(self._objects) do
-		self:_cleanupObject(obj[1], obj[2])
-	end
-	table.clear(self._objects)
+    for _, obj in ipairs(self._objects) do
+        self:_cleanupObject(obj[1], obj[2])
+    end
+    table.clear(self._objects)
 end
-
 
 function Trove:_cleanupObject(object, cleanupMethod)
-	if cleanupMethod == FN_MARKER then
-		object()
-	else
-		object[cleanupMethod](object)
-	end
+    if cleanupMethod == FN_MARKER then
+        object()
+    else
+        object[cleanupMethod](object)
+    end
 end
-
 
 --[=[
 	@param instance Instance
@@ -243,21 +231,19 @@ end
 	:::
 ]=]
 function Trove:AttachToInstance(instance: Instance)
-	assert(instance:IsDescendantOf(game), "Instance is not a descendant of the game hierarchy")
-	return self:Connect(instance.AncestryChanged, function(_child, parent)
-		if not parent then
-			self:Destroy()
-		end
-	end)
+    assert(instance:IsDescendantOf(game), "Instance is not a descendant of the game hierarchy")
+    return self:Connect(instance.AncestryChanged, function(_child, parent)
+        if not parent then
+            self:Destroy()
+        end
+    end)
 end
-
 
 --[=[
 	Destroys the Trove object. Forces `Clean` to run.
 ]=]
 function Trove:Destroy()
-	self:Clean()
+    self:Clean()
 end
-
 
 return Trove
