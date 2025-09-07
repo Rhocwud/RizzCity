@@ -37,7 +37,6 @@ jobs:
         run: python3 -m pip install --user requests
 
       - name: Normalize newlines & prepare files (in-workspace)
-        # This normalizes CRLF/CR -> LF in-place for .luau files
         run: |
           set -euo pipefail
           if [ ! -d "${{ env.ROOT }}" ]; then
@@ -162,7 +161,7 @@ jobs:
           print("Wrote", out_path)
           PY
 
-            - name: Commit & push ProjectInventory.csv (if changed)
+      - name: Commit & push ProjectInventory.csv (if changed)
         id: commit
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
