@@ -1,5 +1,5 @@
-# StyLua config for Luau/Roblox
-# Ref: https://github.com/JohnnyMorganz/stylua
+# StyLua config (Luau, safe keys)
+syntax = "Luau"            # <- use this, not lua_version
 column_width = 120
 indent_type = "Spaces"
 indent_width = 4
@@ -7,9 +7,3 @@ line_endings = "Unix"
 quote_style = "AutoPreferDouble"
 call_parentheses = "Always"
 collapse_simple_statement = "Never"
-lua_version = "Lua54"
-
-# Only format the Explorer tree
-include = "Explorer/**/*.luau"
-# If you have auto-generated code to skip, add patterns here:
-# exclude = ["Explorer/**/Generated/**"]
