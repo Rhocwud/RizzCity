@@ -8,3 +8,4 @@ Bus.toggleWarMap = function() end
 Bus.alert = function(_msg: string, _secs: number?) end
 
 return Bus
+

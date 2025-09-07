@@ -26,19 +26,20 @@ local camera = workspace.CurrentCamera
 local tuning
 
 function M:Start(_flags, _tuning)
-    tuning = _tuning
-    player.CameraMinZoomDistance = tuning.Camera.MinZoom
-    player.CameraMaxZoomDistance = tuning.Camera.MaxZoom
+	tuning = _tuning
+	player.CameraMinZoomDistance = tuning.Camera.MinZoom
+	player.CameraMaxZoomDistance = tuning.Camera.MaxZoom
 
-    -- Keep enforcing caps (studio hot-reload safety)
-    RunService.RenderStepped:Connect(function()
-        if player.CameraMinZoomDistance ~= tuning.Camera.MinZoom then
-            player.CameraMinZoomDistance = tuning.Camera.MinZoom
-        end
-        if player.CameraMaxZoomDistance ~= tuning.Camera.MaxZoom then
-            player.CameraMaxZoomDistance = tuning.Camera.MaxZoom
-        end
-    end)
+	-- Keep enforcing caps (studio hot-reload safety)
+	RunService.RenderStepped:Connect(function()
+		if player.CameraMinZoomDistance ~= tuning.Camera.MinZoom then
+			player.CameraMinZoomDistance = tuning.Camera.MinZoom
+		end
+		if player.CameraMaxZoomDistance ~= tuning.Camera.MaxZoom then
+			player.CameraMaxZoomDistance = tuning.Camera.MaxZoom
+		end
+	end)
 end
 
 return M
+

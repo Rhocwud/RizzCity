@@ -2,27 +2,27 @@
 -- Boots flags/tuning, disables default controls, and starts controllers.
 
 local Players = game:GetService("Players")
-local RS = game:GetService("ReplicatedStorage")
+local RS      = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
 
 -- Shared config
-local Shared = RS:WaitForChild("Shared")
-local ConfigFolder = Shared:WaitForChild("Config")
-local FeatureFlags = require(ConfigFolder:WaitForChild("FeatureFlags"))
-local Tuning = require(ConfigFolder:WaitForChild("Tuning"))
+local Shared        = RS:WaitForChild("Shared")
+local ConfigFolder  = Shared:WaitForChild("Config")
+local FeatureFlags  = require(ConfigFolder:WaitForChild("FeatureFlags"))
+local Tuning        = require(ConfigFolder:WaitForChild("Tuning"))
 
 -- Disable Roblox default controls so our input owns movement
 local function disableDefaultControls()
-    local pm = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-    pm:GetControls():Disable()
+	local pm = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+	pm:GetControls():Disable()
 end
 
 -- Set camera caps early (server also does this in PlayerService)
 local function applyCameraCaps()
-    player.CameraMinZoomDistance = Tuning.Camera.MinZoom
-    player.CameraMaxZoomDistance = Tuning.Camera.MaxZoom
+	player.CameraMinZoomDistance = Tuning.Camera.MinZoom
+	player.CameraMaxZoomDistance = Tuning.Camera.MaxZoom
 end
 
 disableDefaultControls()
@@ -34,6 +34,5 @@ require(script.Parent:WaitForChild("MovementController")):Start(FeatureFlags, Tu
 require(script.Parent:WaitForChild("TargetLockController")):Start(FeatureFlags, Tuning)
 
 -- Optional: hide default reset button etc. if you like
-pcall(function()
-    StarterGui:SetCore("ResetButtonCallback", false)
-end)
+pcall(function() StarterGui:SetCore("ResetButtonCallback", false) end)
+

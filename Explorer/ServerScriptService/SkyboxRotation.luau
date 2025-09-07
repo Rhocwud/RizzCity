@@ -19,12 +19,12 @@ local sky = lighting:FindFirstChild("Sky")
 local rotationSpeed = 10 -- Change this to whatever you want! Negative values makes the skybox rotate in the opposite direction!
 
 runService.Heartbeat:Connect(function(deltaTime) -- Runs every frame
-    if sky then
-        -- Rotates the skybox depending on your rotation speed and multiplying it by deltaTime to make sure it's smooth for everyone no matter what FPS they're running on!
-        sky.SkyboxOrientation = Vector3.new(0, (sky.SkyboxOrientation.Y + rotationSpeed * deltaTime) % 360, 0)
-    else
-        -- Extra warning just in case
-        warn("No skybox found in game.Lighting")
-        script.Enabled = false
-    end
+	if sky then
+		-- Rotates the skybox depending on your rotation speed and multiplying it by deltaTime to make sure it's smooth for everyone no matter what FPS they're running on!
+		sky.SkyboxOrientation = Vector3.new(0, (sky.SkyboxOrientation.Y + rotationSpeed * deltaTime) % 360, 0)
+	else
+		-- Extra warning just in case
+		warn("No skybox found in game.Lighting")
+		script.Enabled = false
+	end
 end)
