@@ -7,4 +7,3 @@ local Combat = Net.Combat
 -- Example API shape to grow into:
 -- Combat.OnHit, Combat.ApplyDamage, etc.
 return {}
-

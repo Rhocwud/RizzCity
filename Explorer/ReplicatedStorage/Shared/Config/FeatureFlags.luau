@@ -16,7 +16,7 @@
 --====================================================--
 
 return {
-	NewMovementEnabled = true,
-	NewCombatEnabled   = false,
-	DebugUI            = true,
+    NewMovementEnabled = true,
+    NewCombatEnabled = false,
+    DebugUI = true,
 }
