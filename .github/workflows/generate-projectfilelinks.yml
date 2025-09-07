@@ -3,9 +3,7 @@ name: Generate ProjectFileLinks
 
 on:
   workflow_dispatch: {}
-  schedule:
-    # Every 60 minutes
-    - cron: '*/60 * * * *'
+  # schedule removed — inventory workflow is the canonical scheduled job
 
 permissions:
   contents: write
