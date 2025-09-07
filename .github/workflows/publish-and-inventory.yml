@@ -1,30 +1,23 @@
 name: Publish and inventory
 
 on:
-  workflow_dispatch: {}            # manual run
-  schedule:
-    - cron: '*/30 * * * *'         # every 30 minutes
+  workflow_dispatch: {}          # manual run
+  schedule:                      # scheduled run every 30 minutes
+    - cron: '*/30 * * * *'
 
 permissions:
-  contents: write                  # allow reading/writing repo contents (best-effort; pushes use GH_PAT)
-
-env:
-  ROOT: Explorer
-  OUT_CSV: docs/ProjectInventory.csv
-  GIST_DESCRIPTION: "RizzCity .luau snapshot (private)"
+  contents: write
 
 jobs:
-  publish-inventory:
+  snapshot-and-inventory:
     runs-on: ubuntu-latest
     env:
-      REPO: ${{ github.repository }}
+      ROOT: Explorer
+      OUT_CSV: docs/ProjectInventory.csv
+      GIST_DESCRIPTION: "RizzCity .luau snapshot (private gist)"
       GH_PAT: ${{ secrets.GH_PAT }}
-      ROOT: ${{ env.ROOT }}
-      OUT_CSV: ${{ env.OUT_CSV }}
-      GIST_DESCRIPTION: ${{ env.GIST_DESCRIPTION }}
-
     steps:
-      - name: Checkout repo (no credentials persisted)
+      - name: Checkout repo (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -33,139 +26,145 @@ jobs:
       - name: Ensure docs folder exists
         run: mkdir -p docs
 
-      - name: Install python requests
-        run: |
-          python3 -m pip install --upgrade --user requests
+      - name: Setup Python 3
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-      - name: Normalize newlines to LF for all .luau files
-        # convert CRLF -> LF safely in-place for all .luau under $ROOT
-        run: |
-          set -euo pipefail
-          if [ ! -d "$ROOT" ]; then
-            echo "Root folder '$ROOT' not found - nothing to normalize"
-            exit 0
-          fi
-          # Use perl to replace CRLF/CR with LF reliably
-          find "$ROOT" -type f -name "*.luau" -print0 | while IFS= read -r -d '' file; do
-            perl -0777 -pe 's/\r\n?/\n/g' "$file" > "${file}.normalized" && mv "${file}.normalized" "$file" || true
-          done
-          echo "Normalized newlines for .luau files."
+      - name: Install Python requirements
+        run: python3 -m pip install --user requests
 
-      - name: Create private gist and generate ProjectInventory.csv
+      - name: Create gist snapshot and ProjectInventory.csv
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
           ROOT: ${{ env.ROOT }}
           OUT_CSV: ${{ env.OUT_CSV }}
           GIST_DESCRIPTION: ${{ env.GIST_DESCRIPTION }}
+          GH_PAT: ${{ env.GH_PAT }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os, sys, json, requests
+          import os, json, requests, csv, pathlib, sys
+          repo_root = os.getcwd()
+          root = os.environ.get("ROOT", "Explorer")
+          out_csv = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
+          gh_pat = os.environ.get("GH_PAT")
+          gist_description = os.environ.get("GIST_DESCRIPTION", "luau snapshot")
 
-          ROOT = os.environ.get("ROOT", "Explorer")
-          OUT_CSV = os.environ.get("OUT_CSV", "docs/ProjectInventory.csv")
-          DESCRIPTION = os.environ.get("GIST_DESCRIPTION", "snapshot")
-          TOKEN = os.environ.get("GH_PAT")
-          if not TOKEN:
-              print("ERROR: GH_PAT is not set", file=sys.stderr)
-              sys.exit(2)
+          if not gh_pat:
+              print("ERROR: GH_PAT not set")
+              sys.exit(1)
 
-          files_payload = {}
-          inventory = []
+          # Collect files
+          files = []
+          for dirpath, dirnames, filenames in os.walk(root):
+              for fn in sorted(filenames):
+                  if fn.lower().endswith(".luau"):
+                      full = os.path.join(dirpath, fn)
+                      rel = os.path.relpath(full, repo_root).replace("\\", "/")
+                      files.append((full, rel))
 
-          # Walk and collect .luau files sorted deterministically
-          for dirpath, dirnames, filenames in os.walk(ROOT):
-              filenames = sorted(filenames)
-              for fn in filenames:
-                  if not fn.lower().endswith(".luau"):
-                      continue
-                  path = os.path.join(dirpath, fn)
-                  rel = os.path.relpath(path, ROOT).replace(os.path.sep, "/")
-                  with open(path, "rb") as fh:
-                      b = fh.read()
-                  try:
-                      text = b.decode("utf-8")
-                  except Exception:
-                      text = b.decode("latin-1")
-                  gist_name = rel.replace("/", "__")
-                  files_payload[gist_name] = {"content": text}
-                  line_count = text.count("\n") + (0 if text.endswith("\n") else 1)
-                  inventory.append({
-                      "filename": fn,
-                      "repo_path": os.path.join(dirpath, fn).replace(os.path.sep, "/"),
-                      "gist_filename": gist_name,
-                      "line_count": line_count,
-                      "byte_size": len(b),
-                  })
-
-          if not files_payload:
-              print("No .luau files found under", ROOT)
-              # still write an empty CSV header
-              with open(OUT_CSV, "w", encoding="utf-8") as f:
-                  f.write("filename,repo_path,gist_filename,raw_gist_url,line_count,byte_size\n")
-              print("Wrote empty inventory to", OUT_CSV)
+          if not files:
+              print("No .luau files found under", root)
+              # Write empty CSV if not exists
+              pathlib.Path(os.path.dirname(out_csv)).mkdir(parents=True, exist_ok=True)
+              with open(out_csv, "w", newline='', encoding="utf-8") as f:
+                  w = csv.writer(f)
+                  w.writerow(["filename","repo_path","gist_filename","raw_gist_url","line_count","byte_size"])
+              print("Wrote empty", out_csv)
               sys.exit(0)
 
-          # Create private gist
-          gist_data = {
-              "description": DESCRIPTION,
-              "public": False,
-              "files": files_payload
+          # Normalize newlines and prepare gist payload
+          gist_files = {}
+          inventory_rows = []
+          for full, rel in files:
+              with open(full, "rb") as f:
+                  raw = f.read()
+              try:
+                  text = raw.decode("utf-8")
+              except Exception:
+                  # fallback with replace
+                  text = raw.decode("utf-8", errors="replace")
+              # normalize newlines to LF
+              normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+              # write back normalized content if differs
+              if normalized != text:
+                  with open(full, "w", newline="\n", encoding="utf-8") as f:
+                      f.write(normalized)
+                  print(f"Normalized newlines: {rel}")
+              # compute metadata
+              lines = len(normalized.splitlines())
+              bsize = len(normalized.encode("utf-8"))
+              # gist filename: replace '/' with '__' to keep unique flat names
+              gist_name = rel.replace("/", "__")
+              gist_files[gist_name] = {"content": normalized}
+              inventory_rows.append({
+                  "filename": os.path.basename(rel),
+                  "repo_path": rel,
+                  "gist_filename": gist_name,
+                  "raw_gist_url": "",   # fill after gist creation
+                  "line_count": lines,
+                  "byte_size": bsize
+              })
+
+          # Create private gist with all files
+          headers = {
+              "Authorization": f"token {gh_pat}",
+              "Accept": "application/vnd.github+json"
           }
-          headers = {"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json"}
-          r = requests.post("https://api.github.com/gists", headers=headers, json=gist_data)
-          if r.status_code not in (200,201):
-              print("Failed to create gist:", r.status_code, r.text, file=sys.stderr)
-              sys.exit(3)
-          gist = r.json()
-          html_url = gist.get("html_url")
-          # Construct raw base: gistusercontent raw link form
-          # raw url = https://gist.githubusercontent.com/<user>/<gist_id>/raw/<filename>
-          gist_id = gist.get("id")
-          # We'll produce raw URL in the format that GitHub provides:
-          # https://gist.githubusercontent.com/<owner>/<gist_id>/raw/<gist_filename>
-          owner = gist.get("owner", {}).get("login", "")
-          raw_base = f"https://gist.githubusercontent.com/{owner}/{gist_id}/raw/"
+          payload = {
+              "description": gist_description,
+              "public": False,
+              "files": gist_files
+          }
+          resp = requests.post("https://api.github.com/gists", headers=headers, data=json.dumps(payload))
+          if resp.status_code not in (200,201):
+              print("Failed to create gist:", resp.status_code)
+              print(resp.text)
+              sys.exit(1)
+          gist = resp.json()
+          # The response contains 'files' mapping with 'raw_url' fields
+          gist_files_resp = gist.get("files", {})
 
-          # Write CSV inventory
-          with open(OUT_CSV, "w", encoding="utf-8") as f:
-              f.write("filename,repo_path,gist_filename,raw_gist_url,line_count,byte_size\n")
-              for it in inventory:
-                  raw_url = raw_base + it["gist_filename"]
-                  # simple CSV escaping (filenames likely safe but wrap quotes)
-                  line = f'{it["filename"]},{it["repo_path"]},{it["gist_filename"]},{raw_url},{it["line_count"]},{it["byte_size"]}\n'
-                  f.write(line)
+          # Build inventory CSV rows with raw URLs
+          for row in inventory_rows:
+              gf = gist_files_resp.get(row["gist_filename"], {})
+              raw_url = gf.get("raw_url", "")
+              row["raw_gist_url"] = raw_url
 
-          print("Created gist:", html_url)
-          print("Wrote inventory to", OUT_CSV)
+          # Write CSV to OUT_CSV
+          out_dir = os.path.dirname(out_csv)
+          if out_dir:
+              os.makedirs(out_dir, exist_ok=True)
+          with open(out_csv, "w", newline='', encoding="utf-8") as f:
+              w = csv.writer(f)
+              w.writerow(["filename","repo_path","gist_filename","raw_gist_url","line_count","byte_size"])
+              for r in inventory_rows:
+                  w.writerow([r["filename"], r["repo_path"], r["gist_filename"], r["raw_gist_url"], r["line_count"], r["byte_size"]])
+
+          print(f"Wrote inventory to {out_csv} with {len(inventory_rows)} entries")
+          print("Gist URL:", gist.get("html_url"))
+          print("Gist ID:", gist.get("id"))
           PY
 
-      - name: Commit & push ProjectInventory.csv (if changed)
+      - name: Commit and push ProjectInventory.csv (if changed)
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          REPO: ${{ env.REPO }}
+          GH_PAT: ${{ env.GH_PAT }}
           OUT_CSV: ${{ env.OUT_CSV }}
         run: |
           set -euo pipefail
+          # Configure git user
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT_CSV" || true
 
-          # Ensure repository has latest main so commit can fast-forward
-          git fetch origin main:refs/remotes/origin/main || true
-          git add "$OUT_CSV"
-
+          # exit 0 if no changes
           if git diff --staged --quiet; then
             echo "No changes to commit."
             exit 0
           fi
 
-          git commit -m "chore: update ProjectInventory.csv (auto-generated gist snapshot)"
-          # Use PAT to push
-          # Replace remote URL to include token
-          git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/${REPO}.git"
-          git push origin HEAD:main
+          git commit -m "chore: regenerate ProjectInventory.csv"
+          # Use GH_PAT to push (kept in secret). GitHub masks secrets in logs.
+          remote="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
+          git push "$remote" HEAD:main
 
-      - name: Done - show inventory
-        run: |
-          echo "Inventory (first 40 lines):"
-          head -n 40 "$OUT_CSV" || true
