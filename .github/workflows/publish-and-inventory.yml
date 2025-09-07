@@ -213,16 +213,16 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request if we pushed a branch
-        if: steps.commit.outputs.pr_branch != ''
+        if: ${{ steps.commit.outputs.pr_branch != '' }}
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GH_PAT }}
-          commit-message: chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt
-          title: chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt
+          commit-message: "chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt"
+          title: "chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt"
           body: |
             Auto-generated update of ProjectInventory.csv and ProjectFileLinks.txt.
             The workflow detected that origin/main changed since the run started, so the update was pushed to this branch for manual review and merge.
           base: main
-          branch: ${{ steps.commit.outputs.pr_branch }}
+          head: ${{ steps.commit.outputs.pr_branch }}
           labels: auto-generated
           draft: false
