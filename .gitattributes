@@ -1,17 +1,1 @@
-- Tokens & secrets: the automation uses a repository secret named `GH_PAT` (Personal Access Token) with the minimum required scopes:
-- `gist` (read & write) — required if creating gists
-- `repo` (read & write) — required to commit `docs/ProjectInventory.csv`
-- Optionally `workflow` if dispatching other workflows is needed
-- DO NOT paste PATs in chat. Rotate the PAT periodically (current token expires 2026-09-06).
-- Permissions: ensure repo Actions permissions allow workflows to push or create PRs. If PR creation fails, check repo Settings → Actions → Workflow permissions.
-- Backup & auditing: `docs/ProjectInventory.csv` is the canonical inventory artifact. Keep it in `docs/` (versioned) and optionally upload per-run artifacts for long-term snapshots.
-
-Recommended one-time dev tasks
-1. Add `.gitattributes` with `*.luau text eol=lf` at repo root.  
-2. Add `scripts/normalize_newlines.py` and run it before snapshotting any files that appear single-line.  
-3. Add `scripts/create_gist_and_inventory.py` and `.github/workflows/publish-and-inventory.yml` (inventory + gist).  
-4. Ensure `GH_PAT` secret exists with required scopes and test the workflow manually once.
-
-Assistant behaviour (operational)
-- At the start of chat: read this file and the CSV/filelinks, then fetch raw files using the recorded `raw` URLs. If access fails, request the developer to re-run the inventory workflow (no token requests).  
-- For code edits: the assistant will produce patches, PR-ready diffs, or run-Action suggestions; it will not directly accept token values in chat.  
+*.luau text eol=lf
