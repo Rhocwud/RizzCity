@@ -99,20 +99,14 @@ jobs:
           echo "EOL normalization PR opened; skipping formatting/inventory for this run."
           exit 0
 
-      # ---------- FORMAT: StyLua reflows Explorer/**/*.luau to multi-line ----------
-      - name: Install StyLua
+      # ---------- FORMAT: StyLua reflows Explorer/**/*.luau ----------
+      # Use the action directly with 'args' (no separate install/run step needed)
+      - name: Format with StyLua
         uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          version: 0.20.1
-          args: --version
-
-      - name: Run StyLua (format in place)
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Format only Explorer/**/*.luau (config also limits scope)
-          stylua Explorer
+          version: latest
+          args: --config-path ./.stylua.toml Explorer
 
       - name: Commit formatted files (if any)
         id: fmt_commit
