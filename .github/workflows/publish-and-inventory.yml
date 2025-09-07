@@ -162,36 +162,68 @@ jobs:
           print("Wrote", out_path)
           PY
 
-      - name: Commit & push inventory + links (if changed)
+            - name: Commit & push ProjectInventory.csv (if changed)
+        id: commit
         env:
-          GH_PAT: ${{ env.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT }}
           OUT_CSV: ${{ env.OUT_CSV }}
           OUT_LINKS: ${{ env.OUT_LINKS }}
         run: |
           set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add "${OUT_CSV}" "${OUT_LINKS}" || true
 
+          # If there are no staged changes, exit cleanly and mark changed=false
           if git diff --staged --quiet; then
             echo "No changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          # Create the local commit
           git commit -m "chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt (auto)"
 
-          # Use GH_PAT for authenticated operations (set origin to token URL)
+          # Prepare auth for pushing
           remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
           git remote set-url origin "$remote_url"
 
-          # Fetch remote main and rebase our commit on top to avoid non-fast-forward
+          # Fetch current remote main
           git fetch origin main
-          # If the remote has new commits, rebase our local branch onto it.
-          # If rebase fails, fall back to merge to avoid leaving job stuck (but fail on conflicts).
-          if git rev-parse --verify origin/main >/dev/null 2>&1; then
-            git rebase origin/main || git pull --rebase origin main
+
+          LOCAL=$(git rev-parse @)
+          REMOTE=$(git rev-parse origin/main)
+          BASE=$(git merge-base @ origin/main)
+
+          # If remote is an ancestor of local, safe to push directly to main
+          if [ "$REMOTE" = "$BASE" ]; then
+            echo "Remote origin/main is ancestor of local HEAD — pushing directly to main."
+            git push origin HEAD:main
+            echo "pushed_direct=true" >> "$GITHUB_OUTPUT"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
-          # Finally push
-          git push origin HEAD:main
+          # Otherwise the branches have diverged. Push to unique branch and create PR.
+          echo "Remote origin/main has new commits (diverged). Will push this commit to a branch and open a PR instead of forcing a push."
+          pr_branch="projectinventory/update-${GITHUB_RUN_ID}"
+          git push origin HEAD:"${pr_branch}" --force-with-lease
+          echo "pr_branch=${pr_branch}" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create Pull Request if we pushed a branch
+        if: steps.commit.outputs.pr_branch != ''
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_PAT }}
+          commit-message: chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt
+          title: chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt
+          body: |
+            Auto-generated update of ProjectInventory.csv and ProjectFileLinks.txt.
+            The workflow detected that origin/main changed since the run started, so the update was pushed to this branch for manual review and merge.
+          base: main
+          branch: ${{ steps.commit.outputs.pr_branch }}
+          labels: auto-generated
+          draft: false
