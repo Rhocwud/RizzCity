@@ -3,7 +3,7 @@ name: Publish and inventory
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '*/60 * * * *'   # every 60 minutes
+    - cron: '0 * * * *'   # every 60 minutes
 
 permissions:
   contents: write
@@ -58,7 +58,6 @@ jobs:
           repo_root = os.getcwd()
           rows = []
 
-          # Collect .luau files deterministically
           if os.path.isdir(ROOT):
               for dirpath, dirnames, filenames in os.walk(ROOT):
                   dirnames.sort()
@@ -78,18 +77,16 @@ jobs:
                       raw_url = f"https://raw.githubusercontent.com/{REPO_SLUG}/{SOURCE_SHA}/{rel}"
 
                       rows.append({
-                          "filename":   os.path.basename(rel),
-                          "repo_path":  rel,
+                          "filename":     os.path.basename(rel),
+                          "repo_path":    rel,
                           "raw_repo_url": raw_url,
-                          "commit_sha": SOURCE_SHA,
-                          "line_count": line_count,
-                          "byte_size":  byte_size,
+                          "commit_sha":   SOURCE_SHA,
+                          "line_count":   line_count,
+                          "byte_size":    byte_size,
                       })
 
-          # Ensure docs folder exists
           os.makedirs(os.path.dirname(OUT_CSV), exist_ok=True)
 
-          # Write CSV
           with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
               w = csv.writer(f)
               w.writerow(["filename","repo_path","raw_repo_url","commit_sha","line_count","byte_size"])
@@ -112,7 +109,6 @@ jobs:
 
           git add "${OUT_CSV}" || true
 
-          # If there are no staged changes, exit cleanly and mark changed=false
           if git diff --staged --quiet; then
             echo "No changes to commit."
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -121,13 +117,10 @@ jobs:
 
           git commit -m "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
 
-          # Prepare auth for pushing
           remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
           git remote set-url origin "$remote_url"
 
-          # Fetch current remote main
           git fetch origin main
-
           LOCAL=$(git rev-parse @)
           REMOTE=$(git rev-parse origin/main)
           BASE=$(git merge-base @ origin/main)
@@ -152,6 +145,8 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GH_PAT }}
+          branch: ${{ steps.commit.outputs.pr_branch }}   # fixed: use 'branch', not 'head'
+          base: main
           commit-message: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           title: "chore: regenerate ProjectInventory.csv (pinned raw URLs + line_count)"
           body: |
@@ -159,7 +154,6 @@ jobs:
             - Only CSV is produced (no gist, no mapping txt).
             - raw_repo_url is pinned to SOURCE_SHA.
             - line_count is wc-style to catch newline issues immediately.
-          base: main
-          head: ${{ steps.commit.outputs.pr_branch }}
           labels: auto-generated
           draft: false
+          delete-branch: true
