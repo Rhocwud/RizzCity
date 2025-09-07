@@ -1,0 +1,62 @@
+name: Normalize Luau EOLs
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure .gitattributes rule for Luau (LF)
+        shell: bash
+        run: |
+          set -euo pipefail
+          touch .gitattributes
+          # Add the rule only if it's not already present (exact match)
+          if ! grep -qxF "*.luau text eol=lf" .gitattributes; then
+            echo "*.luau text eol=lf" >> .gitattributes
+            echo "Added '*.luau text eol=lf' to .gitattributes"
+          else
+            echo "Rule already present in .gitattributes"
+          fi
+
+      - name: Renormalize working tree to LF for tracked files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add .gitattributes
+          # This reapplies text normalization using .gitattributes
+          git add --renormalize .
+          if git diff --staged --quiet; then
+            echo "No newline changes needed."
+            echo "changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Create PR with normalization changes
+        if: always()  # run even if no changes (the action will no-op cleanly)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          branch: normalize-luau-eol/${{ github.run_id }}   # <-- use 'branch', not 'head'
+          base: main
+          title: "chore: normalize .luau line endings to LF"
+          body: |
+            Automated EOL normalization:
+            - Ensured `.gitattributes` contains `*.luau text eol=lf`.
+            - Rewrote tracked `.luau` files to LF (`git add --renormalize .`).
+            After merging, re-run "Publish and inventory" to refresh `ProjectInventory.csv` line counts.
+          commit-message: "chore: normalize .luau line endings to LF"
+          labels: auto-generated
+          draft: false
+          delete-branch: true
