@@ -180,13 +180,18 @@ jobs:
           fi
 
           git commit -m "chore: regenerate ProjectInventory.csv + ProjectFileLinks.txt (auto)"
-          remote="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
-          git push "$remote" HEAD:main
 
-      - name: Show inventory head
-        run: |
-          echo "Inventory preview:"
-          head -n 40 "${{ env.OUT_CSV }}" || true
-          echo ""
-          echo "ProjectFileLinks preview:"
-          head -n 40 "${{ env.OUT_LINKS }}" || true
+          # Use GH_PAT for authenticated operations (set origin to token URL)
+          remote_url="https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote set-url origin "$remote_url"
+
+          # Fetch remote main and rebase our commit on top to avoid non-fast-forward
+          git fetch origin main
+          # If the remote has new commits, rebase our local branch onto it.
+          # If rebase fails, fall back to merge to avoid leaving job stuck (but fail on conflicts).
+          if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            git rebase origin/main || git pull --rebase origin main
+          fi
+
+          # Finally push
+          git push origin HEAD:main
