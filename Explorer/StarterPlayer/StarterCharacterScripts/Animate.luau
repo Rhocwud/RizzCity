@@ -42,7 +42,7 @@ local animNames = {
 		{ id = "http://www.roblox.com/asset/?id=111635044873452", weight = 2}
 	},
 	walk = 	{ 	
-		{ id = "http://www.roblox.com/asset/?id=100848839471019", weight = 10 } 
+		{ id = "http://www.roblox.com/asset/?id=128496768132826", weight = 10 } 
 	}, 
 	run = 	{
 		{ id = "http://www.roblox.com/asset/?id=100848839471019", weight = 10 } 
