@@ -420,7 +420,6 @@ function M:_tweenCameraOffset(enable: boolean)
 end
 
 function M:_enableShiftLock(enabled: boolean)
-	-- optional sound
 	if SoundService:FindFirstChild("ShiftLockSound") then
 		pcall(function() SoundService.ShiftLockSound:Play() end)
 	end
